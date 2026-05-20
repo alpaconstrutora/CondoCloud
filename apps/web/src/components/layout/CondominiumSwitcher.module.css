@@ -1,0 +1,67 @@
+.wrap {
+  position: relative;
+  margin: 0 12px 8px;
+}
+
+.trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 8px;
+  color: #fff;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.trigger:hover { background: rgba(255,255,255,0.14); }
+
+.icon { font-size: 15px; }
+.name { flex: 1; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chevron { font-size: 10px; opacity: 0.7; }
+
+.dropdown {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 4px);
+  background: #1e2433;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  z-index: 100;
+  overflow: hidden;
+}
+
+.header {
+  padding: 8px 12px 6px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgba(255,255,255,0.45);
+}
+
+.item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.8);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.12s;
+  text-align: left;
+}
+.item:hover { background: rgba(255,255,255,0.07); }
+.item.active { color: #fff; background: rgba(99,102,241,0.2); }
+
+.itemIcon { font-size: 14px; }
+.itemName { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.check { color: #6366f1; font-weight: 700; }

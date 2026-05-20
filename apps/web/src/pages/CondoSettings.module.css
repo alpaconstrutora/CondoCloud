@@ -1,0 +1,116 @@
+.card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 28px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.sectionTitle {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.grid1 {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+.grid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.grid3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+}
+
+/* logradouro (3fr) + número (1fr) */
+.grid31 {
+  display: grid;
+  grid-template-columns: 3fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 700px) {
+  .grid2, .grid3, .grid31 { grid-template-columns: 1fr; }
+}
+
+.sectionSubtitle {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  margin-top: 8px;
+}
+
+.formFooter {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.msgOk {
+  font-size: 13px;
+  color: var(--green-dark);
+  font-weight: 600;
+}
+
+.msgErr {
+  font-size: 13px;
+  color: #c0334d;
+}
+
+.statsRow {
+  display: flex;
+  gap: 20px;
+}
+
+.statBox {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 16px 28px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  min-width: 100px;
+}
+
+.statVal {
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--green-dark);
+  line-height: 1;
+}
+
+.statLbl {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.fieldHint {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.structureNote {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 4px 0 0;
+}

@@ -1,0 +1,30 @@
+:root {
+  --green-dark: #0E4D35;
+  --green: #16A869;
+  --green-2: #138C58;
+  --pink: #E5257A;
+  --pink-hover: #C91E6B;
+  --paper: #F3EFE7;
+  --ink: #0D0D0D;
+  --muted: #5e5e5e;
+  --dark-card: #0F241D;
+  --line: #e7e3d8;
+  --radius: 16px;
+  --sans: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: #fff;
+  color: var(--ink);
+  font-family: var(--sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: inherit; text-decoration: none; }
+button { font-family: inherit; cursor: pointer; border: none; background: none; }
+img { max-width: 100%; display: block; }

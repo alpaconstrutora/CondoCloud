@@ -1,0 +1,41 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm install *)",
+      "Bash(npx tsc *)",
+      "Bash(pnpm add *)",
+      "Bash(node -e \"console.log\\(require\\('./node_modules/stripe/package.json'\\).version\\)\")",
+      "Bash(node -e \"const pkg = require\\('./node_modules/stripe/package.json'\\); console.log\\(pkg.types, pkg.main, pkg.exports?.['.']\\)\")",
+      "Bash(gunzip -c \"C:\\\\Users\\\\altai\\\\.claude\\\\projects\\\\d--CONDOCLOUD\\\\e928e4ac-9686-4a4e-a075-aea0771afecd\\\\tool-results\\\\webfetch-1776538195130-630hz5.bin\")",
+      "Bash(tar tf *)",
+      "Read(//tmp/condocloud/chats/**)",
+      "Read(//d/tmp/condocloud/chats/**)",
+      "Read(//tmp/condocloud/project/**)",
+      "Bash(python3 -c \" with open\\('/tmp/condocloud/project/CondoCloud.html', 'r', encoding='utf-8'\\) as f: content = f.read\\(\\) print\\(content\\) \")",
+      "Bash(python3 -)",
+      "Bash(node -e ' *)",
+      "Bash(tar xf *)",
+      "Read(//c/tmp/condocloud/project/**)",
+      "Bash(pnpm --filter @condocloud/web add @supabase/supabase-js)",
+      "Bash(pnpm --filter @condocloud/web run build)",
+      "Bash(pnpm --filter @condocloud/shared build)",
+      "Bash(npx vite *)",
+      "Bash(npm run *)",
+      "Bash(cat)",
+      "Bash(chmod +x /tmp/final_check.sh)",
+      "Bash(/tmp/final_check.sh)",
+      "Read(//d/d/CONDOCLOUD/apps/mobile/**)",
+      "Bash(node -e \"require\\('dotenv'\\).config\\({path:'../../.env'}\\); const {createClient}=require\\('@supabase/supabase-js'\\); const s=createClient\\(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY\\); s.from\\('condominiums'\\).select\\('count'\\).then\\(r=>console.log\\('Supabase OK:', JSON.stringify\\(r\\)\\)\\).catch\\(e=>console.log\\('Erro:', e.message\\)\\)\")",
+      "Bash(supabase --version)",
+      "Bash(supabase status *)",
+      "Bash(npx supabase *)",
+      "Bash(curl -s http://localhost:3001/api/v1/health)",
+      "Bash(netstat -ano)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5173/)",
+      "Bash(pnpm run *)",
+      "Bash(awk '{print $5}')",
+      "Bash(xargs -I{} taskkill //PID {} //F)",
+      "Bash(curl -s http://localhost:3001/api/v1/auth/me -H \"Authorization: Bearer test\")"
+    ]
+  }
+}
