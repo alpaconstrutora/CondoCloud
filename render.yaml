@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: condocloud-api
+    runtime: node
+    region: oregon
+    plan: free
+    buildCommand: pnpm install --frozen-lockfile && pnpm --filter @condocloud/shared build && pnpm --filter api build
+    startCommand: node apps/api/dist/main
+    healthCheckPath: /api/v1
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
