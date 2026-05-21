@@ -347,3 +347,38 @@
 
 .iconBtn { background: none; border: none; cursor: pointer; padding: 4px 6px; border-radius: 6px; font-size: 15px; opacity: 0.7; transition: opacity 0.15s; }
 .iconBtn:hover { opacity: 1; background: #f0f0f0; }
+
+/* ── Pagination ── */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 8px 0;
+}
+.btnSecondary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ── Progress bar ── */
+.progressBar {
+  position: relative;
+  height: 20px;
+  background: #f0ece4;
+  border-radius: 999px;
+  overflow: hidden;
+}
+.progressFill {
+  height: 100%;
+  background: var(--green-dark);
+  border-radius: 999px;
+  transition: width 0.2s ease;
+}
+.progressLabel {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink);
+}

@@ -10,6 +10,7 @@
     "lint": "eslint src --ext ts,tsx"
   },
   "dependencies": {
+    "@condocloud/shared": "workspace:*",
     "@supabase/supabase-js": "^2.103.3",
     "html2pdf.js": "^0.14.0",
     "react": "^18.3.1",

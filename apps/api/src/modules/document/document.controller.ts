@@ -1,6 +1,6 @@
 import { Body, Controller, Delete, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
 import { DocumentService } from './document.service';
-import { CreateDocumentDto } from './dto/document.dto';
+import { CreateDocumentDto, GetUploadUrlDto, DocumentQueryDto } from './dto/document.dto';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { CurrentTenant } from '../../common/decorators/current-tenant.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -11,6 +11,18 @@ import type { Profile } from '@condocloud/shared';
 @Controller('documents')
 export class DocumentController {
   constructor(private readonly documentService: DocumentService) {}
+
+  /** Gera URL assinada para upload direto ao Supabase Storage */
+  @Post('upload-url')
+  @UseGuards(RolesGuard)
+  @Roles('sindico', 'sindico_administradora', 'desenvolvedor')
+  async getUploadUrl(
+    @CurrentTenant() condoId: string,
+    @Body() dto: GetUploadUrlDto,
+  ): Promise<ApiResponse> {
+    const result = await this.documentService.getUploadUrl(condoId, dto);
+    return ApiResponse.ok(result);
+  }
 
   @Post()
   @UseGuards(RolesGuard)
@@ -27,10 +39,34 @@ export class DocumentController {
   @Get()
   async findAll(
     @CurrentTenant() condoId: string,
-    @Query('category') category?: string,
+    @CurrentUser() user: Profile,
+    @Query() query: DocumentQueryDto,
   ): Promise<ApiResponse> {
-    const docs = await this.documentService.findAll(condoId, category);
-    return ApiResponse.ok(docs);
+    const page = Number(query.page ?? 1);
+    const pageSize = Number(query.page_size ?? 20);
+    const result = await this.documentService.findAll(condoId, user.role, query.category, page, pageSize);
+    return ApiResponse.ok(result);
+  }
+
+  /** Retorna URL assinada de download (valida visibilidade e registra auditoria) */
+  @Get(':id/download')
+  async download(
+    @CurrentTenant() condoId: string,
+    @CurrentUser() user: Profile,
+    @Param('id') id: string,
+  ): Promise<ApiResponse> {
+    const url = await this.documentService.getDownloadUrl(condoId, id, user.role, user.id);
+    return ApiResponse.ok({ url });
+  }
+
+  /** Lista todas as versões de um documento */
+  @Get(':id/versions')
+  async versions(
+    @CurrentTenant() condoId: string,
+    @Param('id') id: string,
+  ): Promise<ApiResponse> {
+    const versions = await this.documentService.getVersions(condoId, id);
+    return ApiResponse.ok(versions);
   }
 
   @Delete(':id')
@@ -38,9 +74,10 @@ export class DocumentController {
   @Roles('sindico', 'sindico_administradora', 'desenvolvedor')
   async delete(
     @CurrentTenant() condoId: string,
+    @CurrentUser() user: Profile,
     @Param('id') id: string,
   ): Promise<ApiResponse> {
-    await this.documentService.delete(condoId, id);
+    await this.documentService.delete(condoId, id, user.id);
     return ApiResponse.ok(null, 'Documento removido');
   }
 }

@@ -81,7 +81,14 @@ export type DocumentCategory =
   | 'planta'
   | 'financeiro'
   | 'outro';
-export type DocumentVisibility = 'all' | 'sindico' | 'desenvolvedor';
+
+export const DOCUMENT_CATEGORIES: DocumentCategory[] = [
+  'ata', 'regulamento', 'contrato', 'planta', 'financeiro', 'outro',
+];
+
+export type DocumentVisibility = 'all' | 'sindico' | 'admin';
+
+export const DOCUMENT_VISIBILITIES: DocumentVisibility[] = ['all', 'sindico', 'admin'];
 
 // ── Convites ─────────────────────────────────────────────────
 export type InviteChannel = 'whatsapp' | 'email' | 'qr' | 'csv';

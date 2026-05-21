@@ -11,6 +11,7 @@ export * from './types/assembly.types';
 export * from './types/reservation.types';
 export * from './types/notification.types';
 export * from './types/billing.types';
+export * from './types/document.types';
 
 // Constantes e enums
 export * from './constants/domain-events';
