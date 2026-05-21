@@ -1,4 +1,5 @@
 import { IsEnum, IsNumber, IsOptional, IsString, IsUUID, Min } from 'class-validator';
+import { Type } from 'class-transformer';
 import type { DocumentCategory, DocumentVisibility } from '@condocloud/shared';
 
 export class CreateDocumentDto {
@@ -18,6 +19,6 @@ export class GetUploadUrlDto {
 
 export class DocumentQueryDto {
   @IsOptional() @IsString() category?: string;
-  @IsOptional() @IsNumber() @Min(1) page?: number;
-  @IsOptional() @IsNumber() @Min(1) page_size?: number;
+  @IsOptional() @Type(() => Number) @IsNumber() @Min(1) page?: number;
+  @IsOptional() @Type(() => Number) @IsNumber() @Min(1) page_size?: number;
 }
