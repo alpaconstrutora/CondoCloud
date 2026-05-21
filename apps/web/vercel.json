@@ -1,6 +1,6 @@
 {
   "installCommand": "cd ../.. && pnpm install --frozen-lockfile",
-  "buildCommand": "cd ../.. && pnpm --filter @condocloud/web build",
+  "buildCommand": "cd ../.. && pnpm --filter @condocloud/shared build && pnpm --filter @condocloud/web build",
   "outputDirectory": "dist",
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
