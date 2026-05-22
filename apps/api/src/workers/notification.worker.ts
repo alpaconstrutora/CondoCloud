@@ -6,6 +6,7 @@ import { SupabaseService } from '../infrastructure/supabase/supabase.service';
 import { BaseEventProcessor } from '../events/event-processor.base';
 import { ResendService } from '../infrastructure/resend/resend.service';
 import { WhatsAppService } from '../infrastructure/whatsapp/whatsapp.service';
+import { whatsappTemplates } from '../infrastructure/whatsapp/whatsapp-message.templates';
 import {
   ticketResolvedEmail,
   newResidentEmail,
@@ -16,6 +17,7 @@ interface ProfileContact {
   id: string;
   email?: string;
   whatsapp?: string;
+  whatsapp_opt_in?: boolean;
   name?: string;
 }
 
@@ -56,7 +58,7 @@ export class NotificationWorker extends BaseEventProcessor {
     const { data } = await this.supabaseService
       .getAdminClient()
       .from('profiles')
-      .select('id, email, whatsapp, name')
+      .select('id, email, whatsapp, whatsapp_opt_in, name')
       .eq('id', profileId)
       .single();
     return data as ProfileContact | null;
@@ -79,8 +81,12 @@ export class NotificationWorker extends BaseEventProcessor {
     whatsappText: string,
   ): Promise<void> {
     const tasks: Promise<void>[] = [];
-    if (profile.email) tasks.push(this.resend.sendEmail(profile.email, subject, html));
-    if (profile.whatsapp) tasks.push(this.whatsapp.sendMessage(profile.whatsapp, whatsappText));
+    if (profile.email) {
+      tasks.push(this.resend.sendEmail(profile.email, subject, html));
+    }
+    if (profile.whatsapp && profile.whatsapp_opt_in) {
+      tasks.push(this.whatsapp.sendMessage(profile.whatsapp, whatsappText, profile.id));
+    }
     await Promise.allSettled(tasks);
   }
 
@@ -137,7 +143,7 @@ export class NotificationWorker extends BaseEventProcessor {
       profile,
       `✅ Chamado resolvido — ${condoName}`,
       ticketResolvedEmail(condoName, t.title),
-      `✅ *CondoCloud — ${condoName}*\n\nSeu chamado _"${t.title}"_ foi resolvido. Acesse o app para ver os detalhes.`,
+      whatsappTemplates.ticketResolved(condoName, t.title),
     );
   }
 
@@ -147,7 +153,7 @@ export class NotificationWorker extends BaseEventProcessor {
 
     const { data: sindicos } = await supabase
       .from('profiles')
-      .select('id, email, whatsapp, name')
+      .select('id, email, whatsapp, whatsapp_opt_in, name')
       .eq('condominium_id', condoId)
       .eq('role', 'sindico')
       .eq('active', true);
@@ -170,7 +176,7 @@ export class NotificationWorker extends BaseEventProcessor {
           s,
           `👋 Novo morador — ${condoName}`,
           newResidentEmail(condoName),
-          `👋 *CondoCloud — ${condoName}*\n\nUm novo morador aceitou o convite e entrou no condomínio. Acesse o painel para ver a lista atualizada.`,
+          whatsappTemplates.newResident(condoName),
         );
       }),
     );
@@ -210,7 +216,7 @@ export class NotificationWorker extends BaseEventProcessor {
       profile,
       `👍 Proposta aprovada — ${condoName}`,
       proposalApprovedEmail(condoName),
-      `👍 *CondoCloud — ${condoName}*\n\nAlguém aprovou sua proposta comercial. Acesse o app para ver os detalhes.`,
+      whatsappTemplates.proposalInteraction(condoName),
     );
   }
 }
