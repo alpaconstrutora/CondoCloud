@@ -1,6 +1,9 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { api } from '../lib/api';
+import { supabase } from '../lib/supabase';
+
+const API_BASE = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api/v1` : '/api/v1';
 
 interface CondoSummary {
   id: string;
@@ -119,6 +122,7 @@ const btnSecondary: React.CSSProperties = {
 export default function MultiCondoDashboard() {
   const { myCondominiums, switchCondominium, refreshCondominiums } = useAuth();
   const [summaries, setSummaries] = useState<CondoSummary[]>([]);
+  const [condoErrors, setCondoErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [showNew, setShowNew] = useState(false);
 
@@ -126,24 +130,39 @@ export default function MultiCondoDashboard() {
     async function load() {
       setLoading(true);
       const results: CondoSummary[] = [];
+      const errors: Record<string, string> = {};
 
-      for (const condo of myCondominiums) {
-        try {
-          const res = await fetch(`/api/v1/metrics/dashboard`, {
-            headers: {
-              Authorization: `Bearer ${(await import('../lib/supabase').then(m => m.supabase.auth.getSession())).data.session?.access_token ?? ''}`,
-              'X-Active-Condo-ID': condo.id,
-              'Content-Type': 'application/json',
-            },
-          });
-          if (res.ok) {
-            const json = await res.json() as { data: Record<string, number> };
-            results.push({ id: condo.id, name: condo.name, ...json.data } as CondoSummary);
+      const token = (await supabase.auth.getSession()).data.session?.access_token ?? '';
+
+      await Promise.all(
+        myCondominiums.map(async (condo) => {
+          try {
+            const res = await fetch(`${API_BASE}/metrics/dashboard`, {
+              headers: {
+                Authorization: `Bearer ${token}`,
+                'X-Active-Condo-ID': condo.id,
+                'Content-Type': 'application/json',
+              },
+            });
+            if (res.ok) {
+              const json = await res.json() as { data: Record<string, number> };
+              results.push({ id: condo.id, name: condo.name, ...json.data } as CondoSummary);
+            } else {
+              const text = await res.text();
+              let msg = `HTTP ${res.status}`;
+              try { msg = (JSON.parse(text) as { message?: string }).message ?? msg; } catch { /* */ }
+              errors[condo.id] = msg;
+              results.push({ id: condo.id, name: condo.name, tickets_open: 0, charges_pending: 0, charges_overdue: 0, active_residents: 0, total_messages: 0 });
+            }
+          } catch (err) {
+            errors[condo.id] = err instanceof Error ? err.message : 'Erro de conexão';
+            results.push({ id: condo.id, name: condo.name, tickets_open: 0, charges_pending: 0, charges_overdue: 0, active_residents: 0, total_messages: 0 });
           }
-        } catch { /* ignora condomínio com erro */ }
-      }
+        }),
+      );
 
       setSummaries(results);
+      setCondoErrors(errors);
       setLoading(false);
     }
 
@@ -203,10 +222,10 @@ export default function MultiCondoDashboard() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
           {summaries.map((s) => (
             <div key={s.id} style={{
-              background: '#fff', border: '1px solid #e5e7eb',
+              background: '#fff', border: `1px solid ${condoErrors[s.id] ? '#fca5a5' : '#e5e7eb'}`,
               borderRadius: 12, padding: 20, boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
             }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: condoErrors[s.id] ? 8 : 16 }}>
                 <div>
                   <div style={{ fontWeight: 700, fontSize: 15, color: '#111827' }}>{s.name}</div>
                   <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 2 }}>{s.active_residents} moradores</div>
@@ -218,6 +237,12 @@ export default function MultiCondoDashboard() {
                   Acessar
                 </button>
               </div>
+
+              {condoErrors[s.id] && (
+                <div style={{ background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: 6, padding: '6px 10px', marginBottom: 12, fontSize: 12, color: '#b91c1c' }}>
+                  Erro ao carregar métricas: {condoErrors[s.id]}
+                </div>
+              )}
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                 <MiniStat label="Chamados" value={s.tickets_open} color="#f59e0b" />

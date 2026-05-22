@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { BadRequestException, Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { MetricsService } from './metrics.service';
 import { MetricsQueryDto } from './dto/metrics.dto';
 import { CurrentTenant } from '../../common/decorators/current-tenant.decorator';
@@ -38,6 +38,7 @@ export class MetricsController {
 
   @Get('dashboard')
   async getDashboard(@CurrentTenant() condoId: string): Promise<ApiResponse> {
+    if (!condoId) throw new BadRequestException('Condomínio não identificado. Envie o header X-Active-Condo-ID.');
     const data = await this.metricsService.getDashboardSummary(condoId);
     return ApiResponse.ok(data);
   }

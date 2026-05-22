@@ -69,6 +69,8 @@ export class MetricsService {
   }
 
   async getDashboardSummary(condoId: string): Promise<Record<string, number>> {
+    if (!condoId) throw new Error('condominium_id ausente');
+
     const supabase = this.supabaseService.getAdminClient();
 
     const [tickets, residents, charges, messages] = await Promise.all([
