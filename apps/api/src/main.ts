@@ -47,7 +47,7 @@ async function bootstrap() {
   );
   app.useGlobalInterceptors(app.get(AuditInterceptor));
 
-  app.setGlobalPrefix('api/v1');
+  app.setGlobalPrefix('api/v1', { exclude: ['privacy'] });
 
   const port = process.env.PORT ?? 3000;
   await app.listen(port);
