@@ -26,6 +26,7 @@ import { NotificationModule } from './modules/notification/notification.module';
 import { AiModule } from './modules/ai/ai.module';
 import { MetricsModule } from './modules/metrics/metrics.module';
 import { WhatsappSettingsModule } from './modules/whatsapp-settings/whatsapp-settings.module';
+import { TipoMoradorModule } from './modules/tipo-morador/tipo-morador.module';
 import { TenantMiddleware } from './common/middleware/tenant.middleware';
 import { AuditInterceptor } from './common/interceptors/audit.interceptor';
 
@@ -65,6 +66,7 @@ import { AuditInterceptor } from './common/interceptors/audit.interceptor';
     AiModule,
     MetricsModule,
     WhatsappSettingsModule,
+    TipoMoradorModule,
   ],
   controllers: [AppController],
   providers: [AppService, AuditInterceptor],

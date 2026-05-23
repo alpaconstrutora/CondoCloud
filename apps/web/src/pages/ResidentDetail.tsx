@@ -10,13 +10,10 @@ interface Unit {
   blocks?: { name: string };
 }
 
-const TIPO_MORADOR_OPTIONS = [
-  { value: '', label: '— não informado —' },
-  { value: 'proprietario', label: 'Proprietário' },
-  { value: 'inquilino', label: 'Inquilino' },
-  { value: 'dependente', label: 'Dependente' },
-  { value: 'outro', label: 'Outro' },
-];
+interface TipoMorador {
+  id: string;
+  nome: string;
+}
 
 interface Profile {
   id: string;
@@ -66,6 +63,7 @@ export default function ResidentDetail() {
 
   const [profile, setProfile] = useState<Profile | null>(null);
   const [units, setUnits] = useState<Unit[]>([]);
+  const [tipos, setTipos] = useState<TipoMorador[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
 
@@ -84,13 +82,15 @@ export default function ResidentDetail() {
   async function load() {
     if (!id) return;
     try {
-      const [profRes, unitsRes] = await Promise.all([
+      const [profRes, unitsRes, tiposRes] = await Promise.all([
         api.get<ApiResponse<Profile>>(`/auth/profiles/${id}`),
         api.get<ApiResponse<Unit[]>>('/condominium/units'),
+        api.get<ApiResponse<TipoMorador[]>>('/tipos-morador'),
       ]);
       const p = profRes.data;
       setProfile(p);
       setUnits(unitsRes.data ?? []);
+      setTipos(tiposRes.data ?? []);
       setName(p.name ?? '');
       setPhone(p.phone ?? '');
       setWhatsapp(p.whatsapp ?? '');
@@ -98,6 +98,7 @@ export default function ResidentDetail() {
       setRole(p.role);
       setTipoMorador(p.tipo_morador ?? '');
       setUnitId(p.unit_id ?? '');
+
       setActive(p.active);
     } catch {
       navigate('/residents', { replace: true });
@@ -268,7 +269,8 @@ export default function ResidentDetail() {
                   <div className={styles.field}>
                     <label>Tipo de morador</label>
                     <select value={tipoMorador} onChange={e => setTipoMorador(e.target.value)} disabled={role !== 'morador'}>
-                      {TIPO_MORADOR_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                      <option value="">— não informado —</option>
+                      {tipos.map(t => <option key={t.id} value={t.nome}>{t.nome}</option>)}
                     </select>
                   </div>
                 </div>
@@ -344,9 +346,7 @@ export default function ResidentDetail() {
               {profile.role === 'morador' && (
                 <div className={styles.metaRow}>
                   <span className={styles.metaKey}>Tipo</span>
-                  <span className={styles.metaVal}>
-                    {TIPO_MORADOR_OPTIONS.find(o => o.value === profile.tipo_morador)?.label ?? '—'}
-                  </span>
+                  <span className={styles.metaVal}>{profile.tipo_morador ?? '—'}</span>
                 </div>
               )}
               <div className={styles.metaRow}>

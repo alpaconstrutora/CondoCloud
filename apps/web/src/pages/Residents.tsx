@@ -4,13 +4,10 @@ import { api } from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
 import styles from './modules.module.css';
 
-const TIPO_MORADOR_OPTIONS = [
-  { value: '', label: '— não informado —' },
-  { value: 'proprietario', label: 'Proprietário' },
-  { value: 'inquilino', label: 'Inquilino' },
-  { value: 'dependente', label: 'Dependente' },
-  { value: 'outro', label: 'Outro' },
-];
+interface TipoMorador {
+  id: string;
+  nome: string;
+}
 
 interface Profile {
   id: string;
@@ -43,23 +40,20 @@ interface Unit {
 
 interface ApiResponse<T> { data: T }
 
-// Mapa de label e cor por role
 const ROLE_META: Record<string, { label: string; bg: string; color: string }> = {
-  desenvolvedor:         { label: 'Desenvolvedor',      bg: '#fef3c7', color: '#92400e' },
-  sindico_administradora:{ label: 'Sínd. Administradora', bg: '#ede9fe', color: '#5b21b6' },
-  sindico:               { label: 'Síndico',            bg: '#dbeafe', color: '#1d4ed8' },
-  morador:               { label: 'Morador',            bg: '#dcfce7', color: '#15803d' },
-  prestador:             { label: 'Prestador',          bg: '#f3f4f6', color: '#374151' },
+  desenvolvedor:          { label: 'Desenvolvedor',        bg: '#fef3c7', color: '#92400e' },
+  sindico_administradora: { label: 'Sínd. Administradora', bg: '#ede9fe', color: '#5b21b6' },
+  sindico:                { label: 'Síndico',              bg: '#dbeafe', color: '#1d4ed8' },
+  morador:                { label: 'Morador',              bg: '#dcfce7', color: '#15803d' },
+  prestador:              { label: 'Prestador',            bg: '#f3f4f6', color: '#374151' },
 };
 
-// Roles que cada nível pode atribuir
 const ASSIGNABLE_ROLES: Record<string, string[]> = {
   desenvolvedor:          ['desenvolvedor', 'sindico_administradora', 'sindico', 'morador', 'prestador'],
   sindico_administradora: ['sindico', 'morador', 'prestador'],
   sindico:                ['sindico', 'morador', 'prestador'],
 };
 
-// Roles válidos para convite (apenas quem entra pelo link)
 const INVITE_ROLES = ['morador', 'prestador'];
 
 function RoleBadge({ role }: { role: string }) {
@@ -72,39 +66,44 @@ function RoleBadge({ role }: { role: string }) {
 }
 
 function RoleSelect({
-  value,
-  onChange,
-  currentUserRole,
-  includeInviteOnly = false,
+  value, onChange, currentUserRole, includeInviteOnly = false,
 }: {
-  value: string;
-  onChange: (v: string) => void;
-  currentUserRole: string;
-  includeInviteOnly?: boolean;
+  value: string; onChange: (v: string) => void;
+  currentUserRole: string; includeInviteOnly?: boolean;
 }) {
   const allowed = includeInviteOnly
     ? INVITE_ROLES
     : (ASSIGNABLE_ROLES[currentUserRole] ?? ['morador', 'prestador']);
-
   return (
     <select value={value} onChange={e => onChange(e.target.value)}>
-      {allowed.map(r => (
-        <option key={r} value={r}>{ROLE_META[r]?.label ?? r}</option>
-      ))}
+      {allowed.map(r => <option key={r} value={r}>{ROLE_META[r]?.label ?? r}</option>)}
     </select>
   );
 }
 
-function RegisterModal({ onClose, onSaved, currentUserRole }: {
-  onClose: () => void;
-  onSaved: () => void;
-  currentUserRole: string;
+function TipoMoradorSelect({
+  value, onChange, tipos, disabled,
+}: {
+  value: string; onChange: (v: string) => void;
+  tipos: TipoMorador[]; disabled?: boolean;
+}) {
+  return (
+    <select value={value} onChange={e => onChange(e.target.value)} disabled={disabled}>
+      <option value="">— não informado —</option>
+      {tipos.map(t => <option key={t.id} value={t.id}>{t.nome}</option>)}
+    </select>
+  );
+}
+
+function RegisterModal({ onClose, onSaved, currentUserRole, tipos }: {
+  onClose: () => void; onSaved: () => void;
+  currentUserRole: string; tipos: TipoMorador[];
 }) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [role, setRole] = useState('morador');
-  const [tipoMorador, setTipoMorador] = useState('');
+  const [tipoMoradorId, setTipoMoradorId] = useState('');
   const [unitId, setUnitId] = useState('');
   const [units, setUnits] = useState<Unit[]>([]);
   const [loading, setLoading] = useState(false);
@@ -119,12 +118,13 @@ function RegisterModal({ onClose, onSaved, currentUserRole }: {
     e.preventDefault();
     setLoading(true); setError(''); setTempPassword('');
     try {
+      const tipoNome = tipos.find(t => t.id === tipoMoradorId)?.nome;
       const res = await api.post<ApiResponse<{ profile: Profile; temporary_password: string }>>('/auth/residents', {
         name: name || undefined,
         email: email || undefined,
         phone: phone || undefined,
         role,
-        tipo_morador: tipoMorador || undefined,
+        tipo_morador: tipoNome || undefined,
         unit_id: unitId || undefined,
       });
       setTempPassword(res.data.temporary_password ?? '—');
@@ -184,13 +184,11 @@ function RegisterModal({ onClose, onSaved, currentUserRole }: {
           <div className={styles.fieldRow}>
             <div className={styles.field}>
               <label>Perfil</label>
-              <RoleSelect value={role} onChange={v => { setRole(v); if (v !== 'morador') setTipoMorador(''); }} currentUserRole={currentUserRole} />
+              <RoleSelect value={role} onChange={v => { setRole(v); if (v !== 'morador') setTipoMoradorId(''); }} currentUserRole={currentUserRole} />
             </div>
             <div className={styles.field}>
               <label>Tipo de morador</label>
-              <select value={tipoMorador} onChange={e => setTipoMorador(e.target.value)} disabled={role !== 'morador'}>
-                {TIPO_MORADOR_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-              </select>
+              <TipoMoradorSelect value={tipoMoradorId} onChange={setTipoMoradorId} tipos={tipos} disabled={role !== 'morador'} />
             </div>
           </div>
           <div className={styles.field}>
@@ -217,25 +215,25 @@ function RegisterModal({ onClose, onSaved, currentUserRole }: {
   );
 }
 
-function EditModal({ profile, onClose, onSaved, currentUserRole }: {
-  profile: Profile;
-  onClose: () => void;
-  onSaved: () => void;
-  currentUserRole: string;
+function EditModal({ profile, onClose, onSaved, currentUserRole, tipos }: {
+  profile: Profile; onClose: () => void; onSaved: () => void;
+  currentUserRole: string; tipos: TipoMorador[];
 }) {
   const [name, setName] = useState(profile.name ?? '');
   const [phone, setPhone] = useState(profile.phone ?? '');
   const [whatsapp, setWhatsapp] = useState(profile.whatsapp ?? '');
   const [whatsappOptIn, setWhatsappOptIn] = useState(profile.whatsapp_opt_in ?? false);
   const [role, setRole] = useState(profile.role);
-  const [tipoMorador, setTipoMorador] = useState(profile.tipo_morador ?? '');
+  const [tipoMoradorId, setTipoMoradorId] = useState(() => {
+    const match = tipos.find(t => t.nome === profile.tipo_morador);
+    return match?.id ?? '';
+  });
   const [unitId, setUnitId] = useState(profile.unit_id ?? '');
   const [active, setActive] = useState(profile.active);
   const [units, setUnits] = useState<Unit[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Síndico não pode editar desenvolvedor ou sindico_administradora
   const canEditRole = currentUserRole === 'desenvolvedor' ||
     !['desenvolvedor', 'sindico_administradora'].includes(profile.role);
 
@@ -247,13 +245,14 @@ function EditModal({ profile, onClose, onSaved, currentUserRole }: {
     e.preventDefault();
     setLoading(true); setError('');
     try {
+      const tipoNome = tipos.find(t => t.id === tipoMoradorId)?.nome ?? null;
       await api.patch(`/auth/profiles/${profile.id}`, {
         name: name || undefined,
         phone: phone || undefined,
         whatsapp: whatsapp || undefined,
         whatsapp_opt_in: whatsappOptIn,
         role,
-        tipo_morador: tipoMorador || null,
+        tipo_morador: tipoNome,
         unit_id: unitId || null,
         active,
       });
@@ -295,21 +294,17 @@ function EditModal({ profile, onClose, onSaved, currentUserRole }: {
             <div className={styles.field}>
               <label>Perfil</label>
               {canEditRole ? (
-                <RoleSelect value={role} onChange={v => { setRole(v); if (v !== 'morador') setTipoMorador(''); }} currentUserRole={currentUserRole} />
+                <RoleSelect value={role} onChange={v => { setRole(v); if (v !== 'morador') setTipoMoradorId(''); }} currentUserRole={currentUserRole} />
               ) : (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <RoleBadge role={profile.role} />
-                  <span style={{ fontSize: 12, color: 'var(--muted)' }}>
-                    Apenas desenvolvedor pode alterar
-                  </span>
+                  <span style={{ fontSize: 12, color: 'var(--muted)' }}>Apenas desenvolvedor pode alterar</span>
                 </div>
               )}
             </div>
             <div className={styles.field}>
               <label>Tipo de morador</label>
-              <select value={tipoMorador} onChange={e => setTipoMorador(e.target.value)} disabled={role !== 'morador'}>
-                {TIPO_MORADOR_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-              </select>
+              <TipoMoradorSelect value={tipoMoradorId} onChange={setTipoMoradorId} tipos={tipos} disabled={role !== 'morador'} />
             </div>
           </div>
           <div className={styles.field}>
@@ -342,14 +337,137 @@ function EditModal({ profile, onClose, onSaved, currentUserRole }: {
   );
 }
 
+function TiposTab({ tipos, onChanged }: { tipos: TipoMorador[]; onChanged: () => void }) {
+  const [novoNome, setNovoNome] = useState('');
+  const [editId, setEditId] = useState<string | null>(null);
+  const [editNome, setEditNome] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  async function handleCreate(e: FormEvent) {
+    e.preventDefault();
+    if (!novoNome.trim()) return;
+    setSaving(true); setError('');
+    try {
+      await api.post('/tipos-morador', { nome: novoNome.trim() });
+      setNovoNome('');
+      onChanged();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao criar');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleUpdate(id: string) {
+    if (!editNome.trim()) return;
+    setSaving(true); setError('');
+    try {
+      await api.patch(`/tipos-morador/${id}`, { nome: editNome.trim() });
+      setEditId(null);
+      onChanged();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao salvar');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleDelete(id: string, nome: string) {
+    if (!confirm(`Excluir o tipo "${nome}"?`)) return;
+    try {
+      await api.delete(`/tipos-morador/${id}`);
+      onChanged();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Erro ao excluir');
+    }
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div className={styles.tableWrap}>
+        <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--line)', background: '#fafaf8' }}>
+          <p style={{ margin: 0, fontSize: 13, color: 'var(--muted)' }}>
+            Defina os tipos de morador disponíveis para seleção ao cadastrar ou editar um morador (ex: Proprietário, Inquilino, Dependente).
+          </p>
+        </div>
+
+        {tipos.length === 0 ? (
+          <div style={{ padding: '32px 24px', textAlign: 'center', color: 'var(--muted)', fontSize: 14 }}>
+            Nenhum tipo cadastrado ainda.
+          </div>
+        ) : (
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {tipos.map(t => (
+                <tr key={t.id}>
+                  <td>
+                    {editId === t.id ? (
+                      <input
+                        value={editNome}
+                        onChange={e => setEditNome(e.target.value)}
+                        style={{ padding: '6px 10px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 14, fontFamily: 'var(--sans)', width: '100%', maxWidth: 280 }}
+                        autoFocus
+                        onKeyDown={e => { if (e.key === 'Enter') handleUpdate(t.id); if (e.key === 'Escape') setEditId(null); }}
+                      />
+                    ) : (
+                      <span style={{ fontWeight: 600 }}>{t.nome}</span>
+                    )}
+                  </td>
+                  <td style={{ whiteSpace: 'nowrap', textAlign: 'right' }}>
+                    {editId === t.id ? (
+                      <>
+                        <button className={styles.btnPrimary} style={{ padding: '5px 14px', fontSize: 13, marginRight: 6 }} disabled={saving} onClick={() => handleUpdate(t.id)}>
+                          {saving ? '…' : 'Salvar'}
+                        </button>
+                        <button className={styles.btnSecondary} style={{ padding: '5px 12px', fontSize: 13 }} onClick={() => setEditId(null)}>Cancelar</button>
+                      </>
+                    ) : (
+                      <>
+                        <button className={styles.iconBtn} title="Editar" onClick={() => { setEditId(t.id); setEditNome(t.nome); setError(''); }}>✏️</button>
+                        <button className={styles.iconBtn} title="Excluir" onClick={() => handleDelete(t.id, t.nome)}>🗑️</button>
+                      </>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+
+        <form onSubmit={handleCreate} style={{ padding: '14px 20px', borderTop: tipos.length > 0 ? '1px solid var(--line)' : undefined, display: 'flex', gap: 10, alignItems: 'center' }}>
+          <input
+            value={novoNome}
+            onChange={e => setNovoNome(e.target.value)}
+            placeholder="Novo tipo (ex: Proprietário)"
+            style={{ flex: 1, padding: '9px 14px', border: '1px solid var(--line)', borderRadius: 10, fontSize: 14, fontFamily: 'var(--sans)', outline: 'none' }}
+          />
+          <button type="submit" className={styles.btnPrimary} disabled={saving || !novoNome.trim()}>
+            {saving ? 'Criando…' : '+ Criar'}
+          </button>
+        </form>
+
+        {error && <div className={styles.error} style={{ margin: '0 20px 14px' }}>{error}</div>}
+      </div>
+    </div>
+  );
+}
+
 export default function Residents() {
   const { profile: currentUser } = useAuth();
   const currentUserRole = currentUser?.role ?? 'morador';
 
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [invites, setInvites] = useState<Invite[]>([]);
+  const [tipos, setTipos] = useState<TipoMorador[]>([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<'residents' | 'invites'>('residents');
+  const [tab, setTab] = useState<'residents' | 'invites' | 'tipos'>('residents');
 
   const [showInvite, setShowInvite] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
@@ -363,15 +481,22 @@ export default function Residents() {
   async function load() {
     setLoading(true);
     try {
-      const [profRes, invRes] = await Promise.all([
+      const [profRes, invRes, tiposRes] = await Promise.all([
         api.get<ApiResponse<Profile[]>>('/auth/profiles'),
         api.get<ApiResponse<Invite[]>>('/invites'),
+        api.get<ApiResponse<TipoMorador[]>>('/tipos-morador'),
       ]);
       setProfiles(profRes.data);
       setInvites(invRes.data);
+      setTipos(tiposRes.data ?? []);
     } finally {
       setLoading(false);
     }
+  }
+
+  async function loadTipos() {
+    const res = await api.get<ApiResponse<TipoMorador[]>>('/tipos-morador');
+    setTipos(res.data ?? []);
   }
 
   useEffect(() => { load(); }, []);
@@ -395,7 +520,6 @@ export default function Residents() {
   }
 
   async function handleDelete(p: Profile) {
-    // Bloqueia exclusão de desenvolvedor ou sindico_administradora por síndicos
     if (['desenvolvedor', 'sindico_administradora'].includes(p.role) && currentUserRole !== 'desenvolvedor') {
       alert('Apenas o desenvolvedor pode remover este perfil.');
       return;
@@ -409,17 +533,19 @@ export default function Residents() {
     }
   }
 
-  // Agrupa perfis por role para exibição organizada
   const roleOrder = ['desenvolvedor', 'sindico_administradora', 'sindico', 'morador', 'prestador'];
   const sortedProfiles = [...profiles].sort(
     (a, b) => roleOrder.indexOf(a.role) - roleOrder.indexOf(b.role),
   );
+
+  const isAdmin = ['sindico', 'sindico_administradora', 'desenvolvedor'].includes(currentUserRole);
 
   return (
     <div className={styles.page}>
       {showRegister && (
         <RegisterModal
           currentUserRole={currentUserRole}
+          tipos={tipos}
           onClose={() => setShowRegister(false)}
           onSaved={() => { setShowRegister(false); load(); }}
         />
@@ -432,29 +558,17 @@ export default function Residents() {
             <div className={styles.form}>
               <div className={styles.field}>
                 <label>E-mail (opcional)</label>
-                <input
-                  value={inviteEmail}
-                  onChange={e => setInviteEmail(e.target.value)}
-                  placeholder="usuario@email.com"
-                />
+                <input value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} placeholder="usuario@email.com" />
               </div>
               <div className={styles.field}>
                 <label>Perfil</label>
-                <RoleSelect
-                  value={inviteRole}
-                  onChange={setInviteRole}
-                  currentUserRole={currentUserRole}
-                  includeInviteOnly
-                />
+                <RoleSelect value={inviteRole} onChange={setInviteRole} currentUserRole={currentUserRole} includeInviteOnly />
                 <span style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>
                   Para perfis superiores, use Cadastrar diretamente.
                 </span>
               </div>
               {inviteMsg && (
-                <div
-                  className={inviteMsg.startsWith('Link') ? styles.success : styles.error}
-                  style={{ wordBreak: 'break-all', fontSize: 13 }}
-                >
+                <div className={inviteMsg.startsWith('Link') ? styles.success : styles.error} style={{ wordBreak: 'break-all', fontSize: 13 }}>
                   {inviteMsg}
                 </div>
               )}
@@ -473,6 +587,7 @@ export default function Residents() {
         <EditModal
           profile={editProfile}
           currentUserRole={currentUserRole}
+          tipos={tipos}
           onClose={() => setEditProfile(null)}
           onSaved={() => { setEditProfile(null); load(); }}
         />
@@ -483,31 +598,34 @@ export default function Residents() {
           <h1 className={styles.title}>Usuários</h1>
           <p className={styles.subtitle}>Gerencie perfis de acesso e convites.</p>
         </div>
-        <div style={{ display: 'flex', gap: 10 }}>
-          <button className={styles.btnPrimary} onClick={() => setShowRegister(true)}>+ Cadastrar</button>
-          <button className={styles.btnPrimary} onClick={() => { setShowInvite(true); setInviteMsg(''); }}>+ Convidar</button>
-        </div>
+        {tab !== 'tipos' && (
+          <div style={{ display: 'flex', gap: 10 }}>
+            <button className={styles.btnPrimary} onClick={() => setShowRegister(true)}>+ Cadastrar</button>
+            <button className={styles.btnPrimary} onClick={() => { setShowInvite(true); setInviteMsg(''); }}>+ Convidar</button>
+          </div>
+        )}
       </div>
 
       <div className={styles.filters}>
-        <button
-          className={`${styles.filterBtn} ${tab === 'residents' ? styles.filterActive : ''}`}
-          onClick={() => setTab('residents')}
-        >
+        <button className={`${styles.filterBtn} ${tab === 'residents' ? styles.filterActive : ''}`} onClick={() => setTab('residents')}>
           Usuários ({profiles.length})
         </button>
-        <button
-          className={`${styles.filterBtn} ${tab === 'invites' ? styles.filterActive : ''}`}
-          onClick={() => setTab('invites')}
-        >
+        <button className={`${styles.filterBtn} ${tab === 'invites' ? styles.filterActive : ''}`} onClick={() => setTab('invites')}>
           Convites ({invites.length})
         </button>
+        {isAdmin && (
+          <button className={`${styles.filterBtn} ${tab === 'tipos' ? styles.filterActive : ''}`} onClick={() => setTab('tipos')}>
+            Tipos de morador ({tipos.length})
+          </button>
+        )}
       </div>
 
       {loading ? (
         <div className={styles.skeleton}>
           {Array.from({ length: 5 }).map((_, i) => <div key={i} className={styles.skeletonRow} />)}
         </div>
+      ) : tab === 'tipos' ? (
+        <TiposTab tipos={tipos} onChanged={loadTipos} />
       ) : tab === 'residents' ? (
         sortedProfiles.length === 0 ? (
           <div className={styles.empty}><span>👥</span><p>Nenhum usuário cadastrado ainda.</p></div>
@@ -520,6 +638,7 @@ export default function Residents() {
                   <th>E-mail</th>
                   <th>Unidade</th>
                   <th>Perfil</th>
+                  <th>Tipo</th>
                   <th>Status</th>
                   <th></th>
                 </tr>
@@ -540,6 +659,7 @@ export default function Residents() {
                         {p.units ? `${p.units.blocks?.name ?? ''} ${p.units.number}`.trim() : '—'}
                       </td>
                       <td><RoleBadge role={p.role} /></td>
+                      <td className={styles.tdMuted}>{p.tipo_morador ?? '—'}</td>
                       <td>
                         <span className={styles.badge} style={{
                           background: p.active ? '#dcfce7' : '#f3f4f6',
@@ -603,11 +723,8 @@ export default function Residents() {
                     <td className={styles.tdMuted}>{new Date(inv.created_at).toLocaleDateString('pt-BR')}</td>
                     <td>
                       {inv.status === 'pending' && (
-                        <button
-                          className={styles.iconBtn}
-                          title="Copiar link"
-                          onClick={() => navigator.clipboard.writeText(`${window.location.origin}/convite/${inv.token}`)}
-                        >
+                        <button className={styles.iconBtn} title="Copiar link"
+                          onClick={() => navigator.clipboard.writeText(`${window.location.origin}/convite/${inv.token}`)}>
                           📋
                         </button>
                       )}
