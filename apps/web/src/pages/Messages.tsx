@@ -24,8 +24,8 @@ function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
   const [error, setError] = useState('');
 
   useEffect(() => {
-    api.get<ApiResponse<Block[]>>('/condominiums/blocks').then(r => setBlocks(r.data)).catch(() => {});
-    api.get<ApiResponse<Unit[]>>('/condominiums/units').then(r => setUnits(r.data)).catch(() => {});
+    api.get<ApiResponse<Block[]>>('/condominium/blocks').then(r => setBlocks(r.data)).catch(() => {});
+    api.get<ApiResponse<Unit[]>>('/condominium/units').then(r => setUnits(r.data)).catch(() => {});
   }, []);
 
   async function handleSubmit(e: FormEvent) {
