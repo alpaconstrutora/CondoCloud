@@ -19,6 +19,7 @@ import Reservations from './pages/Reservations';
 import Documents from './pages/Documents';
 import Messages from './pages/Messages';
 import Residents from './pages/Residents';
+import ResidentDetail from './pages/ResidentDetail';
 import Vendors from './pages/Vendors';
 import InviteAccept from './pages/InviteAccept';
 import CondoSettings from './pages/CondoSettings';
@@ -62,6 +63,7 @@ export default function App() {
           <Route path="/documents" element={<Documents />} />
           <Route path="/messages" element={<Messages />} />
           <Route path="/residents" element={<Residents />} />
+          <Route path="/residents/:id" element={<ResidentDetail />} />
           <Route path="/vendors" element={<Vendors />} />
           <Route path="/reports" element={<Reports />} />
           <Route path="/whatsapp" element={<WhatsappSettings />} />

@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
+import { Link } from 'react-router-dom';
 import { api } from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
 import styles from './modules.module.css';
@@ -504,7 +505,13 @@ export default function Residents() {
                     !['desenvolvedor', 'sindico_administradora'].includes(p.role);
                   return (
                     <tr key={p.id}>
-                      <td style={{ fontWeight: 600 }}>{p.name ?? '—'}</td>
+                      <td style={{ fontWeight: 600 }}>
+                        <Link to={`/residents/${p.id}`} style={{ color: 'inherit', textDecoration: 'none' }}
+                          onMouseEnter={e => (e.currentTarget.style.color = 'var(--green-dark)')}
+                          onMouseLeave={e => (e.currentTarget.style.color = 'inherit')}>
+                          {p.name ?? '—'}
+                        </Link>
+                      </td>
                       <td className={styles.tdMuted}>{p.email ?? '—'}</td>
                       <td className={styles.tdMono}>
                         {p.units ? `${p.units.blocks?.name ?? ''} ${p.units.number}`.trim() : '—'}

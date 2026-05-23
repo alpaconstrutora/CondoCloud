@@ -127,6 +127,18 @@ export class AuthService {
     return (data ?? []) as unknown as Profile[];
   }
 
+  async getProfileById(condoId: string, profileId: string): Promise<Profile> {
+    const { data, error } = await this.supabaseService
+      .getAdminClient()
+      .from('profiles')
+      .select('*, units!unit_id(number, blocks(name))')
+      .eq('id', profileId)
+      .eq('condominium_id', condoId)
+      .single();
+    if (error || !data) throw new Error('Perfil não encontrado');
+    return data as unknown as Profile;
+  }
+
   async updateProfile(userId: string, dto: Record<string, unknown>): Promise<Profile> {
     const allowed = ['name', 'phone', 'push_token'];
     const patch = Object.fromEntries(Object.entries(dto).filter(([k]) => allowed.includes(k)));

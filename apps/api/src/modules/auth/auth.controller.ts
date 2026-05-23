@@ -87,6 +87,17 @@ export class AuthController {
     return ApiResponse.ok(profiles);
   }
 
+  @UseGuards(RolesGuard)
+  @Roles('sindico', 'sindico_administradora', 'desenvolvedor')
+  @Get('profiles/:id')
+  async getProfileById(
+    @Param('id') id: string,
+    @CurrentTenant() condoId: string,
+  ): Promise<ApiResponse> {
+    const profile = await this.authService.getProfileById(condoId, id);
+    return ApiResponse.ok(profile);
+  }
+
   @SkipTenant()
   @Patch('profile')
   async updateProfile(
