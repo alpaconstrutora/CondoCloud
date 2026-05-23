@@ -10,4 +10,7 @@ create table tipos_morador (
 alter table tipos_morador enable row level security;
 
 create policy "tenant_tipos_morador" on tipos_morador
-  for all using (condominium_id = get_user_condominium_id());
+  for all using (
+    get_user_role() = 'desenvolvedor'
+    or condominium_id = get_user_condominium()
+  );
