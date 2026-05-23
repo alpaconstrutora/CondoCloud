@@ -56,8 +56,11 @@ export class WhatsAppService {
 
         if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
 
-        const body = await res.json() as { messages?: { id: string }[] };
+        const body = await res.json() as { messages?: { id: string }[]; contacts?: { wa_id: string }[] };
         messageId = body?.messages?.[0]?.id;
+        // Atualiza o número para o wa_id normalizado pela Meta (resolve diferença 8/9 dígitos no Brasil)
+        const waId = body?.contacts?.[0]?.wa_id;
+        if (waId) this.rateLimitMap.set(waId, Date.now());
         this.rateLimitMap.set(number, Date.now());
         this.logger.debug(`WhatsApp enviado → ${number} (tentativa ${attempt})`);
         lastError = undefined;
