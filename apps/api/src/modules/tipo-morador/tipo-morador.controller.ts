@@ -1,13 +1,14 @@
-import { BadRequestException, Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { TipoMoradorService } from './tipo-morador.service';
+import { CreateTipoMoradorDto, UpdateTipoMoradorDto } from './dto/tipo-morador.dto';
 import { CurrentTenant } from '../../common/decorators/current-tenant.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { ApiResponse } from '../../common/dto/api-response.dto';
 
+@Controller('tipos-morador')
 @UseGuards(RolesGuard)
 @Roles('sindico', 'sindico_administradora', 'desenvolvedor')
-@Controller('tipos-morador')
 export class TipoMoradorController {
   constructor(private readonly tipoMoradorService: TipoMoradorService) {}
 
@@ -20,11 +21,9 @@ export class TipoMoradorController {
   @Post()
   async create(
     @CurrentTenant() condoId: string,
-    @Body() body: Record<string, string>,
+    @Body() dto: CreateTipoMoradorDto,
   ): Promise<ApiResponse> {
-    const nome = body?.nome?.trim();
-    if (!nome) throw new BadRequestException('Nome é obrigatório');
-    const data = await this.tipoMoradorService.create(condoId, nome);
+    const data = await this.tipoMoradorService.create(condoId, dto.nome.trim());
     return ApiResponse.ok(data, 'Tipo criado com sucesso');
   }
 
@@ -32,11 +31,9 @@ export class TipoMoradorController {
   async update(
     @CurrentTenant() condoId: string,
     @Param('id') id: string,
-    @Body() body: Record<string, string>,
+    @Body() dto: UpdateTipoMoradorDto,
   ): Promise<ApiResponse> {
-    const nome = body?.nome?.trim();
-    if (!nome) throw new BadRequestException('Nome é obrigatório');
-    const data = await this.tipoMoradorService.update(condoId, id, nome);
+    const data = await this.tipoMoradorService.update(condoId, id, dto.nome.trim());
     return ApiResponse.ok(data, 'Tipo atualizado');
   }
 
