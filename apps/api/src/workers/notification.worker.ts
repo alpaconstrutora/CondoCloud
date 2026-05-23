@@ -11,6 +11,8 @@ import {
   ticketResolvedEmail,
   newResidentEmail,
   proposalApprovedEmail,
+  proposalConvertedEmail,
+  roiUpdatedEmail,
 } from '../infrastructure/resend/email-templates';
 
 interface ProfileContact {
@@ -48,6 +50,12 @@ export class NotificationWorker extends BaseEventProcessor {
         break;
       case DOMAIN_EVENTS.PROPOSAL_INTERACTION:
         await this.notifyProposalInteraction(event);
+        break;
+      case DOMAIN_EVENTS.PROPOSAL_STATUS_CHANGED:
+        await this.notifyProposalStatusChanged(event);
+        break;
+      case DOMAIN_EVENTS.ROI_UPDATED:
+        await this.notifyRoiUpdated(event);
         break;
     }
   }
@@ -217,6 +225,71 @@ export class NotificationWorker extends BaseEventProcessor {
       `👍 Proposta aprovada — ${condoName}`,
       proposalApprovedEmail(condoName),
       whatsappTemplates.proposalInteraction(condoName),
+    );
+  }
+
+  private async notifyProposalStatusChanged(event: DomainEvent): Promise<void> {
+    const payload = event.payload as { status: string };
+    if (payload.status !== 'approved') return;
+
+    const supabase = this.supabaseService.getAdminClient();
+    const { data: proposal } = await supabase
+      .from('proposals')
+      .select('created_by, condominium_id')
+      .eq('id', event.aggregate_id)
+      .single();
+
+    if (!proposal) return;
+    const p = proposal as { created_by?: string; condominium_id: string };
+    if (!p.created_by) return;
+
+    await this.createNotification(
+      p.created_by,
+      'Proposta convertida',
+      'Sua proposta comercial foi marcada como convertida.',
+      'system',
+      event.aggregate_id,
+      p.condominium_id,
+    );
+
+    const [profile, condoName] = await Promise.all([
+      this.getProfile(p.created_by),
+      this.getCondoName(p.condominium_id),
+    ]);
+    if (!profile) return;
+
+    await this.deliver(
+      profile,
+      `🎉 Proposta convertida — ${condoName}`,
+      proposalConvertedEmail(condoName),
+      whatsappTemplates.proposalApproved(condoName),
+    );
+  }
+
+  private async notifyRoiUpdated(event: DomainEvent): Promise<void> {
+    const payload = event.payload as { messages_avoided: number; tickets_resolved: number };
+    const condoId = event.condo_id;
+    const condoName = await this.getCondoName(condoId);
+
+    const supabase = this.supabaseService.getAdminClient();
+    const { data: sindicos } = await supabase
+      .from('profiles')
+      .select('id, email, whatsapp, whatsapp_opt_in, name')
+      .eq('condominium_id', condoId)
+      .in('role', ['sindico', 'sindico_administradora'])
+      .eq('active', true);
+
+    if (!sindicos?.length) return;
+
+    await Promise.all(
+      (sindicos as ProfileContact[]).map((s) =>
+        this.deliver(
+          s,
+          `📊 Resumo do dia — ${condoName}`,
+          roiUpdatedEmail(condoName, payload.messages_avoided, payload.tickets_resolved),
+          whatsappTemplates.roiUpdated(condoName, payload.messages_avoided, payload.tickets_resolved),
+        ),
+      ),
     );
   }
 }

@@ -44,3 +44,23 @@ export function proposalApprovedEmail(condoName: string): string {
     <p>Acesse o aplicativo para ver mais detalhes.</p>
   `);
 }
+
+export function proposalConvertedEmail(condoName: string): string {
+  return layout(condoName, `
+    <p>🎉 <strong>Proposta convertida!</strong></p>
+    <p>Sua proposta comercial no <strong>${condoName}</strong> foi marcada como convertida — contrato fechado.</p>
+    <p>Acesse o aplicativo para ver os detalhes.</p>
+  `);
+}
+
+export function roiUpdatedEmail(condoName: string, messagesAvoided: number, ticketsResolved: number): string {
+  return layout(condoName, `
+    <p>📊 <strong>Resumo do dia — ${condoName}</strong></p>
+    <p>Veja como o CondoCloud está gerando valor hoje:</p>
+    <ul style="color:#374151;font-size:15px;line-height:1.8">
+      <li><strong>${messagesAvoided}</strong> mensagens digitais enviadas</li>
+      <li><strong>${ticketsResolved}</strong> chamados resolvidos no total</li>
+    </ul>
+    <p>Acesse o painel para o relatório completo.</p>
+  `);
+}
