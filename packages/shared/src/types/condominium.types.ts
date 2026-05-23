@@ -62,6 +62,7 @@ export interface Profile {
   unit?: Unit;
   push_token?: string;
   whatsapp?: string;
+  whatsapp_opt_in?: boolean;
   active: boolean;
   is_active: boolean;
   last_active_at?: string;

@@ -205,6 +205,8 @@ function EditModal({ profile, onClose, onSaved, currentUserRole }: {
 }) {
   const [name, setName] = useState(profile.name ?? '');
   const [phone, setPhone] = useState(profile.phone ?? '');
+  const [whatsapp, setWhatsapp] = useState(profile.whatsapp ?? '');
+  const [whatsappOptIn, setWhatsappOptIn] = useState(profile.whatsapp_opt_in ?? false);
   const [role, setRole] = useState(profile.role);
   const [unitId, setUnitId] = useState(profile.unit_id ?? '');
   const [active, setActive] = useState(profile.active);
@@ -227,6 +229,8 @@ function EditModal({ profile, onClose, onSaved, currentUserRole }: {
       await api.patch(`/auth/profiles/${profile.id}`, {
         name: name || undefined,
         phone: phone || undefined,
+        whatsapp: whatsapp || undefined,
+        whatsapp_opt_in: whatsappOptIn,
         role,
         unit_id: unitId || null,
         active,
@@ -251,6 +255,18 @@ function EditModal({ profile, onClose, onSaved, currentUserRole }: {
             <div className={styles.field}>
               <label>Telefone</label>
               <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="(11) 99999-9999" />
+            </div>
+          </div>
+          <div className={styles.fieldRow}>
+            <div className={styles.field}>
+              <label>WhatsApp</label>
+              <input value={whatsapp} onChange={e => setWhatsapp(e.target.value)} placeholder="5511999999999" />
+            </div>
+            <div className={styles.field} style={{ justifyContent: 'flex-end' }}>
+              <label style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+                <input type="checkbox" checked={whatsappOptIn} onChange={e => setWhatsappOptIn(e.target.checked)} />
+                Aceita notificações por WhatsApp
+              </label>
             </div>
           </div>
           <div className={styles.fieldRow}>
