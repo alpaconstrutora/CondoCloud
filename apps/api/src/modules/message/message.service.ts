@@ -1,6 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { SupabaseService } from '../../infrastructure/supabase/supabase.service';
 import { EventEmitterService } from '../../events/event-emitter.service';
+import { WhatsAppService } from '../../infrastructure/whatsapp/whatsapp.service';
+import { WhatsappSettingsService } from '../whatsapp-settings/whatsapp-settings.service';
+import { whatsappTemplates } from '../../infrastructure/whatsapp/whatsapp-message.templates';
 import { DOMAIN_EVENTS } from '@condocloud/shared';
 import { CreateMessageDto } from './dto/message.dto';
 import type { Message, MessageWithMeta, MessagesPage } from '@condocloud/shared';
@@ -13,6 +16,8 @@ export class MessageService {
   constructor(
     private readonly supabaseService: SupabaseService,
     private readonly eventEmitter: EventEmitterService,
+    private readonly whatsapp: WhatsAppService,
+    private readonly waSettings: WhatsappSettingsService,
   ) {}
 
   async create(condoId: string, createdBy: string, dto: CreateMessageDto): Promise<Message> {
@@ -51,6 +56,8 @@ export class MessageService {
           target_id: dto.target_id,
         },
       });
+      // Enviar WhatsApp diretamente (sem depender da fila Bull/Redis)
+      await this.sendWhatsAppForMessage(condoId, message, dto).catch(() => {});
     }
 
     return message;
@@ -194,6 +201,52 @@ export class MessageService {
       .from('messages')
       .update({ deleted_at: new Date().toISOString() })
       .eq('id', id);
+  }
+
+  private async sendWhatsAppForMessage(condoId: string, message: Message, dto: CreateMessageDto): Promise<void> {
+    const [skip, condoData] = await Promise.all([
+      this.waSettings.isEventDisabled(condoId, DOMAIN_EVENTS.MESSAGE_PUBLISHED),
+      this.supabaseService.getAdminClient().from('condominiums').select('name').eq('id', condoId).single(),
+    ]);
+    if (skip) return;
+
+    const condoName = (condoData.data as { name?: string } | null)?.name ?? 'Seu Condomínio';
+    const supabase = this.supabaseService.getAdminClient();
+
+    let q = supabase
+      .from('profiles')
+      .select('id, whatsapp, whatsapp_opt_in')
+      .eq('condominium_id', condoId)
+      .eq('active', true)
+      .in('role', ['morador', 'prestador']);
+
+    if (dto.audience === 'block' && dto.target_id) {
+      q = supabase
+        .from('profiles')
+        .select('id, whatsapp, whatsapp_opt_in')
+        .eq('condominium_id', condoId)
+        .eq('active', true)
+        .eq('block_id', dto.target_id)
+        .in('role', ['morador', 'prestador']);
+    } else if (dto.audience === 'unit' && dto.target_id) {
+      q = supabase
+        .from('profiles')
+        .select('id, whatsapp, whatsapp_opt_in')
+        .eq('condominium_id', condoId)
+        .eq('active', true)
+        .eq('unit_id', dto.target_id)
+        .in('role', ['morador', 'prestador']);
+    }
+
+    const { data: profiles } = await q;
+    if (!profiles?.length) return;
+
+    const text = whatsappTemplates.messagePublished(condoName, message.title);
+    await Promise.allSettled(
+      (profiles as { id: string; whatsapp?: string; whatsapp_opt_in?: boolean }[])
+        .filter(p => p.whatsapp && p.whatsapp_opt_in)
+        .map(p => this.whatsapp.sendMessage(p.whatsapp!, text, p.id)),
+    );
   }
 
   private async broadcastNotification(condoId: string, message: Message, dto: CreateMessageDto): Promise<void> {

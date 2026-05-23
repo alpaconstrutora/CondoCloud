@@ -1,6 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { SupabaseService } from '../../infrastructure/supabase/supabase.service';
 import { EventEmitterService } from '../../events/event-emitter.service';
+import { WhatsAppService } from '../../infrastructure/whatsapp/whatsapp.service';
+import { WhatsappSettingsService } from '../whatsapp-settings/whatsapp-settings.service';
+import { whatsappTemplates } from '../../infrastructure/whatsapp/whatsapp-message.templates';
 import { DOMAIN_EVENTS } from '@condocloud/shared';
 import { CreateChargeDto, MarkPaidDto } from './dto/charge.dto';
 
@@ -26,6 +29,8 @@ export class ChargeService {
   constructor(
     private readonly supabaseService: SupabaseService,
     private readonly eventEmitter: EventEmitterService,
+    private readonly whatsapp: WhatsAppService,
+    private readonly waSettings: WhatsappSettingsService,
   ) {}
 
   async create(condoId: string, dto: CreateChargeDto): Promise<Charge> {
@@ -53,6 +58,11 @@ export class ChargeService {
         description: charge.description,
       },
     });
+
+    // Enviar WhatsApp diretamente (sem depender da fila Bull/Redis)
+    if (charge.profile_id) {
+      await this.sendWhatsAppForCharge(condoId, charge).catch(() => {});
+    }
 
     return charge;
   }
@@ -190,5 +200,25 @@ export class ChargeService {
       .select('id');
 
     return (data ?? []).length;
+  }
+
+  private async sendWhatsAppForCharge(condoId: string, charge: Charge): Promise<void> {
+    const [skip, condoData, profileData] = await Promise.all([
+      this.waSettings.isEventDisabled(condoId, DOMAIN_EVENTS.CHARGE_CREATED),
+      this.supabaseService.getAdminClient().from('condominiums').select('name').eq('id', condoId).single(),
+      this.supabaseService.getAdminClient()
+        .from('profiles')
+        .select('id, whatsapp, whatsapp_opt_in')
+        .eq('id', charge.profile_id!)
+        .single(),
+    ]);
+    if (skip) return;
+
+    const profile = profileData.data as { id: string; whatsapp?: string; whatsapp_opt_in?: boolean } | null;
+    if (!profile?.whatsapp || !profile.whatsapp_opt_in) return;
+
+    const condoName = (condoData.data as { name?: string } | null)?.name ?? 'Seu Condomínio';
+    const text = whatsappTemplates.chargeCreated(condoName, charge.description, charge.amount, charge.due_date);
+    await this.whatsapp.sendMessage(profile.whatsapp, text, profile.id);
   }
 }
