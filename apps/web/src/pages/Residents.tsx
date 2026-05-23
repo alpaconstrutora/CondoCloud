@@ -506,9 +506,7 @@ export default function Residents() {
                   return (
                     <tr key={p.id}>
                       <td style={{ fontWeight: 600 }}>
-                        <Link to={`/residents/${p.id}`} style={{ color: 'inherit', textDecoration: 'none' }}
-                          onMouseEnter={e => (e.currentTarget.style.color = 'var(--green-dark)')}
-                          onMouseLeave={e => (e.currentTarget.style.color = 'inherit')}>
+                        <Link to={`/residents/${p.id}`} style={{ color: 'var(--green-dark)', textDecoration: 'none', fontWeight: 600 }}>
                           {p.name ?? '—'}
                         </Link>
                       </td>
@@ -526,6 +524,9 @@ export default function Residents() {
                         </span>
                       </td>
                       <td style={{ whiteSpace: 'nowrap' }}>
+                        <Link to={`/residents/${p.id}`} className={styles.btnSmall} style={{ background: '#f0fdf4', color: 'var(--green-dark)', padding: '4px 10px', borderRadius: 999, fontWeight: 600, fontSize: 12, textDecoration: 'none', marginRight: 4, display: 'inline-block' }}>
+                          Ver perfil
+                        </Link>
                         {canEdit && (
                           <button className={styles.iconBtn} title="Editar" onClick={() => setEditProfile(p)}>✏️</button>
                         )}
