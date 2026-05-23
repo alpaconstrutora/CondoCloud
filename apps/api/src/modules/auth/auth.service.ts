@@ -154,7 +154,7 @@ export class AuthService {
   }
 
   async updateProfileById(condoId: string, profileId: string, dto: Record<string, unknown>): Promise<Profile> {
-    const allowed = ['name', 'phone', 'whatsapp', 'whatsapp_opt_in', 'role', 'unit_id', 'active'];
+    const allowed = ['name', 'phone', 'whatsapp', 'whatsapp_opt_in', 'role', 'unit_id', 'active', 'tipo_morador'];
     const patch = Object.fromEntries(Object.entries(dto).filter(([k]) => allowed.includes(k)));
     const { data, error } = await this.supabaseService
       .getAdminClient()
@@ -180,7 +180,7 @@ export class AuthService {
 
   async createResident(
     condoId: string,
-    dto: { name: string; email?: string; phone?: string; role: string; unit_id?: string },
+    dto: { name: string; email?: string; phone?: string; role: string; unit_id?: string; tipo_morador?: string },
   ): Promise<{ profile: Profile; temporary_password: string }> {
     const admin = this.supabaseService.getAdminClient();
 
@@ -208,6 +208,7 @@ export class AuthService {
         name: dto.name,
         phone: dto.phone || null,
         role: dto.role,
+        tipo_morador: dto.tipo_morador || null,
         condominium_id: condoId,
         unit_id: dto.unit_id || null,
         active: true,

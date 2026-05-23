@@ -146,7 +146,7 @@ export class AuthController {
   @Post('residents')
   async createResident(
     @CurrentTenant() condoId: string,
-    @Body() dto: { name: string; email: string; phone?: string; role: string; unit_id?: string },
+    @Body() dto: { name: string; email: string; phone?: string; role: string; unit_id?: string; tipo_morador?: string },
   ): Promise<ApiResponse> {
     const result = await this.authService.createResident(condoId, dto);
     return ApiResponse.ok(result, 'Morador cadastrado com sucesso');

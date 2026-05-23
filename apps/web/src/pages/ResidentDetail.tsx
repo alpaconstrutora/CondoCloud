@@ -10,6 +10,14 @@ interface Unit {
   blocks?: { name: string };
 }
 
+const TIPO_MORADOR_OPTIONS = [
+  { value: '', label: '— não informado —' },
+  { value: 'proprietario', label: 'Proprietário' },
+  { value: 'inquilino', label: 'Inquilino' },
+  { value: 'dependente', label: 'Dependente' },
+  { value: 'outro', label: 'Outro' },
+];
+
 interface Profile {
   id: string;
   name?: string;
@@ -18,6 +26,7 @@ interface Profile {
   whatsapp?: string;
   whatsapp_opt_in?: boolean;
   role: string;
+  tipo_morador?: string;
   unit_id?: string;
   units?: { number: string; blocks?: { name: string } };
   active: boolean;
@@ -68,6 +77,7 @@ export default function ResidentDetail() {
   const [role, setRole] = useState('morador');
   const [unitId, setUnitId] = useState('');
   const [active, setActive] = useState(true);
+  const [tipoMorador, setTipoMorador] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -86,6 +96,7 @@ export default function ResidentDetail() {
       setWhatsapp(p.whatsapp ?? '');
       setWhatsappOptIn(p.whatsapp_opt_in ?? false);
       setRole(p.role);
+      setTipoMorador(p.tipo_morador ?? '');
       setUnitId(p.unit_id ?? '');
       setActive(p.active);
     } catch {
@@ -114,6 +125,7 @@ export default function ResidentDetail() {
         whatsapp: whatsapp || undefined,
         whatsapp_opt_in: whatsappOptIn,
         role,
+        tipo_morador: tipoMorador || null,
         unit_id: unitId || null,
         active,
       });
@@ -144,6 +156,7 @@ export default function ResidentDetail() {
     setWhatsapp(profile.whatsapp ?? '');
     setWhatsappOptIn(profile.whatsapp_opt_in ?? false);
     setRole(profile.role);
+    setTipoMorador(profile.tipo_morador ?? '');
     setUnitId(profile.unit_id ?? '');
     setActive(profile.active);
     setError('');
@@ -238,7 +251,7 @@ export default function ResidentDetail() {
                   <div className={styles.field}>
                     <label>Perfil</label>
                     {canEditRole ? (
-                      <select value={role} onChange={e => setRole(e.target.value)}>
+                      <select value={role} onChange={e => { setRole(e.target.value); if (e.target.value !== 'morador') setTipoMorador(''); }}>
                         {(ASSIGNABLE_ROLES[currentUserRole] ?? ['morador', 'prestador']).map(r => (
                           <option key={r} value={r}>{ROLE_META[r]?.label ?? r}</option>
                         ))}
@@ -253,16 +266,23 @@ export default function ResidentDetail() {
                     )}
                   </div>
                   <div className={styles.field}>
-                    <label>Unidade</label>
-                    <select value={unitId} onChange={e => setUnitId(e.target.value)}>
-                      <option value="">— sem unidade —</option>
-                      {units.map(u => (
-                        <option key={u.id} value={u.id}>
-                          {u.blocks?.name ? `${u.blocks.name} - ` : ''}{u.number}
-                        </option>
-                      ))}
+                    <label>Tipo de morador</label>
+                    <select value={tipoMorador} onChange={e => setTipoMorador(e.target.value)} disabled={role !== 'morador'}>
+                      {TIPO_MORADOR_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                     </select>
                   </div>
+                </div>
+
+                <div className={styles.field}>
+                  <label>Unidade</label>
+                  <select value={unitId} onChange={e => setUnitId(e.target.value)}>
+                    <option value="">— sem unidade —</option>
+                    {units.map(u => (
+                      <option key={u.id} value={u.id}>
+                        {u.blocks?.name ? `${u.blocks.name} - ` : ''}{u.number}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className={styles.field}>
@@ -321,6 +341,14 @@ export default function ResidentDetail() {
                 <span className={styles.metaKey}>Perfil</span>
                 <RoleBadge role={profile.role} />
               </div>
+              {profile.role === 'morador' && (
+                <div className={styles.metaRow}>
+                  <span className={styles.metaKey}>Tipo</span>
+                  <span className={styles.metaVal}>
+                    {TIPO_MORADOR_OPTIONS.find(o => o.value === profile.tipo_morador)?.label ?? '—'}
+                  </span>
+                </div>
+              )}
               <div className={styles.metaRow}>
                 <span className={styles.metaKey}>Unidade</span>
                 <span className={styles.metaVal}>{unitLabel}</span>

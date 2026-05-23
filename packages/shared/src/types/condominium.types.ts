@@ -50,6 +50,8 @@ export interface Unit {
   created_at: string;
 }
 
+export type TipoMorador = 'proprietario' | 'inquilino' | 'dependente' | 'outro';
+
 export interface Profile {
   id: string;
   name?: string;
@@ -57,6 +59,7 @@ export interface Profile {
   phone?: string;
   avatar_url?: string;
   role: UserRole;
+  tipo_morador?: TipoMorador;
   condominium_id?: string;
   unit_id?: string;
   unit?: Unit;

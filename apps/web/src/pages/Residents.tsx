@@ -4,11 +4,20 @@ import { api } from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
 import styles from './modules.module.css';
 
+const TIPO_MORADOR_OPTIONS = [
+  { value: '', label: '— não informado —' },
+  { value: 'proprietario', label: 'Proprietário' },
+  { value: 'inquilino', label: 'Inquilino' },
+  { value: 'dependente', label: 'Dependente' },
+  { value: 'outro', label: 'Outro' },
+];
+
 interface Profile {
   id: string;
   name?: string;
   email?: string;
   role: string;
+  tipo_morador?: string;
   phone?: string;
   whatsapp?: string;
   whatsapp_opt_in?: boolean;
@@ -95,6 +104,7 @@ function RegisterModal({ onClose, onSaved, currentUserRole }: {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [role, setRole] = useState('morador');
+  const [tipoMorador, setTipoMorador] = useState('');
   const [unitId, setUnitId] = useState('');
   const [units, setUnits] = useState<Unit[]>([]);
   const [loading, setLoading] = useState(false);
@@ -114,6 +124,7 @@ function RegisterModal({ onClose, onSaved, currentUserRole }: {
         email: email || undefined,
         phone: phone || undefined,
         role,
+        tipo_morador: tipoMorador || undefined,
         unit_id: unitId || undefined,
       });
       setTempPassword(res.data.temporary_password ?? '—');
@@ -173,19 +184,25 @@ function RegisterModal({ onClose, onSaved, currentUserRole }: {
           <div className={styles.fieldRow}>
             <div className={styles.field}>
               <label>Perfil</label>
-              <RoleSelect value={role} onChange={setRole} currentUserRole={currentUserRole} />
+              <RoleSelect value={role} onChange={v => { setRole(v); if (v !== 'morador') setTipoMorador(''); }} currentUserRole={currentUserRole} />
             </div>
             <div className={styles.field}>
-              <label>Unidade</label>
-              <select value={unitId} onChange={e => setUnitId(e.target.value)}>
-                <option value="">— sem unidade —</option>
-                {units.map(u => (
-                  <option key={u.id} value={u.id}>
-                    {u.blocks?.name ? `${u.blocks.name} - ` : ''}{u.number}
-                  </option>
-                ))}
+              <label>Tipo de morador</label>
+              <select value={tipoMorador} onChange={e => setTipoMorador(e.target.value)} disabled={role !== 'morador'}>
+                {TIPO_MORADOR_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
             </div>
+          </div>
+          <div className={styles.field}>
+            <label>Unidade</label>
+            <select value={unitId} onChange={e => setUnitId(e.target.value)}>
+              <option value="">— sem unidade —</option>
+              {units.map(u => (
+                <option key={u.id} value={u.id}>
+                  {u.blocks?.name ? `${u.blocks.name} - ` : ''}{u.number}
+                </option>
+              ))}
+            </select>
           </div>
           {error && <div className={styles.error}>{error}</div>}
           <div className={styles.modalActions}>
@@ -211,6 +228,7 @@ function EditModal({ profile, onClose, onSaved, currentUserRole }: {
   const [whatsapp, setWhatsapp] = useState(profile.whatsapp ?? '');
   const [whatsappOptIn, setWhatsappOptIn] = useState(profile.whatsapp_opt_in ?? false);
   const [role, setRole] = useState(profile.role);
+  const [tipoMorador, setTipoMorador] = useState(profile.tipo_morador ?? '');
   const [unitId, setUnitId] = useState(profile.unit_id ?? '');
   const [active, setActive] = useState(profile.active);
   const [units, setUnits] = useState<Unit[]>([]);
@@ -235,6 +253,7 @@ function EditModal({ profile, onClose, onSaved, currentUserRole }: {
         whatsapp: whatsapp || undefined,
         whatsapp_opt_in: whatsappOptIn,
         role,
+        tipo_morador: tipoMorador || null,
         unit_id: unitId || null,
         active,
       });
@@ -276,7 +295,7 @@ function EditModal({ profile, onClose, onSaved, currentUserRole }: {
             <div className={styles.field}>
               <label>Perfil</label>
               {canEditRole ? (
-                <RoleSelect value={role} onChange={setRole} currentUserRole={currentUserRole} />
+                <RoleSelect value={role} onChange={v => { setRole(v); if (v !== 'morador') setTipoMorador(''); }} currentUserRole={currentUserRole} />
               ) : (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <RoleBadge role={profile.role} />
@@ -287,16 +306,22 @@ function EditModal({ profile, onClose, onSaved, currentUserRole }: {
               )}
             </div>
             <div className={styles.field}>
-              <label>Unidade</label>
-              <select value={unitId} onChange={e => setUnitId(e.target.value)}>
-                <option value="">— sem unidade —</option>
-                {units.map(u => (
-                  <option key={u.id} value={u.id}>
-                    {u.blocks?.name ? `${u.blocks.name} - ` : ''}{u.number}
-                  </option>
-                ))}
+              <label>Tipo de morador</label>
+              <select value={tipoMorador} onChange={e => setTipoMorador(e.target.value)} disabled={role !== 'morador'}>
+                {TIPO_MORADOR_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
             </div>
+          </div>
+          <div className={styles.field}>
+            <label>Unidade</label>
+            <select value={unitId} onChange={e => setUnitId(e.target.value)}>
+              <option value="">— sem unidade —</option>
+              {units.map(u => (
+                <option key={u.id} value={u.id}>
+                  {u.blocks?.name ? `${u.blocks.name} - ` : ''}{u.number}
+                </option>
+              ))}
+            </select>
           </div>
           <div className={styles.field}>
             <label style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
