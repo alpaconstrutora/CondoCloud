@@ -142,7 +142,7 @@ export class AuthService {
   }
 
   async updateProfileById(condoId: string, profileId: string, dto: Record<string, unknown>): Promise<Profile> {
-    const allowed = ['name', 'phone', 'role', 'unit_id', 'active'];
+    const allowed = ['name', 'phone', 'whatsapp', 'whatsapp_opt_in', 'role', 'unit_id', 'active'];
     const patch = Object.fromEntries(Object.entries(dto).filter(([k]) => allowed.includes(k)));
     const { data, error } = await this.supabaseService
       .getAdminClient()

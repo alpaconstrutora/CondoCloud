@@ -9,6 +9,8 @@ interface Profile {
   email?: string;
   role: string;
   phone?: string;
+  whatsapp?: string;
+  whatsapp_opt_in?: boolean;
   active: boolean;
   unit_id?: string;
   units?: { number: string; blocks?: { name: string } };
