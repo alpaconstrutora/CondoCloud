@@ -25,6 +25,7 @@ import CondoSettings from './pages/CondoSettings';
 import Profile from './pages/Profile';
 import MultiCondoDashboard from './pages/MultiCondoDashboard';
 import Reports from './pages/Reports';
+import WhatsappSettings from './pages/WhatsappSettings';
 
 export default function App() {
   return (
@@ -63,6 +64,7 @@ export default function App() {
           <Route path="/residents" element={<Residents />} />
           <Route path="/vendors" element={<Vendors />} />
           <Route path="/reports" element={<Reports />} />
+          <Route path="/whatsapp" element={<WhatsappSettings />} />
           <Route path="/settings" element={<CondoSettings />} />
           <Route path="/profile" element={<Profile />} />
         </Route>

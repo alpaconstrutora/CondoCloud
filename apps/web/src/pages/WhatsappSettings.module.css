@@ -1,0 +1,160 @@
+.sectionTitle {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0 0 12px;
+}
+
+/* ── Event cards ── */
+.eventGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 14px;
+  margin-bottom: 32px;
+}
+
+.eventCard {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: opacity 0.15s;
+}
+
+.eventCardOff {
+  opacity: 0.55;
+}
+
+.eventCardHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.eventIcon {
+  font-size: 20px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.eventLabel {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+  flex: 1;
+}
+
+.toggleBtn {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.1s;
+}
+
+.toggleOn {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.toggleOff {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.toggleBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.eventMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.metaRow {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--ink);
+}
+
+.metaKey {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* ── Users table ── */
+.waNumber {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  padding: 2px 4px;
+  border-radius: 6px;
+  transition: background 0.1s;
+}
+
+.waNumber:hover {
+  background: #f3f4f6;
+}
+
+.waEmpty {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.editHint {
+  font-size: 11px;
+  opacity: 0;
+  transition: opacity 0.1s;
+}
+
+.waNumber:hover .editHint {
+  opacity: 1;
+}
+
+.inlineEdit {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.inlineInput {
+  font-size: 13px;
+  padding: 5px 10px;
+  border: 1px solid var(--green-dark, #1a472a);
+  border-radius: 8px;
+  width: 160px;
+  outline: none;
+}
+
+.optInLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.optInOn {
+  color: #15803d;
+  font-weight: 600;
+}
+
+.optInOff {
+  color: #6b7280;
+}

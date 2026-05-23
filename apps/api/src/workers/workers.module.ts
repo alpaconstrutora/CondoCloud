@@ -11,9 +11,10 @@ import { ActiveUsersJob } from '../jobs/active-users.job';
 import { EventsModule } from '../events/events.module';
 import { ResendModule } from '../infrastructure/resend/resend.module';
 import { WhatsAppModule } from '../infrastructure/whatsapp/whatsapp.module';
+import { WhatsappSettingsModule } from '../modules/whatsapp-settings/whatsapp-settings.module';
 
 @Module({
-  imports: [EventsModule, ResendModule, WhatsAppModule],
+  imports: [EventsModule, ResendModule, WhatsAppModule, WhatsappSettingsModule],
   providers: [
     MetricsWorker,
     MetricActionWorker,

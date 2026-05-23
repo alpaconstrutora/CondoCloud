@@ -6,6 +6,7 @@ import { SupabaseService } from '../infrastructure/supabase/supabase.service';
 import { BaseEventProcessor } from '../events/event-processor.base';
 import { ResendService } from '../infrastructure/resend/resend.service';
 import { WhatsAppService } from '../infrastructure/whatsapp/whatsapp.service';
+import { WhatsappSettingsService } from '../modules/whatsapp-settings/whatsapp-settings.service';
 import { whatsappTemplates } from '../infrastructure/whatsapp/whatsapp-message.templates';
 import {
   ticketResolvedEmail,
@@ -31,6 +32,7 @@ export class NotificationWorker extends BaseEventProcessor {
     supabaseService: SupabaseService,
     private readonly resend: ResendService,
     private readonly whatsapp: WhatsAppService,
+    private readonly waSettings: WhatsappSettingsService,
   ) {
     super(supabaseService);
   }
@@ -87,12 +89,13 @@ export class NotificationWorker extends BaseEventProcessor {
     subject: string,
     html: string,
     whatsappText: string,
+    skipWhatsapp = false,
   ): Promise<void> {
     const tasks: Promise<void>[] = [];
     if (profile.email) {
       tasks.push(this.resend.sendEmail(profile.email, subject, html));
     }
-    if (profile.whatsapp && profile.whatsapp_opt_in) {
+    if (!skipWhatsapp && profile.whatsapp && profile.whatsapp_opt_in) {
       tasks.push(this.whatsapp.sendMessage(profile.whatsapp, whatsappText, profile.id));
     }
     await Promise.allSettled(tasks);
@@ -141,9 +144,10 @@ export class NotificationWorker extends BaseEventProcessor {
       t.condominium_id,
     );
 
-    const [profile, condoName] = await Promise.all([
+    const [profile, condoName, skip] = await Promise.all([
       this.getProfile(t.created_by),
       this.getCondoName(t.condominium_id),
+      this.waSettings.isEventDisabled(t.condominium_id, DOMAIN_EVENTS.TICKET_RESOLVED),
     ]);
     if (!profile) return;
 
@@ -152,6 +156,7 @@ export class NotificationWorker extends BaseEventProcessor {
       `✅ Chamado resolvido — ${condoName}`,
       ticketResolvedEmail(condoName, t.title),
       whatsappTemplates.ticketResolved(condoName, t.title),
+      skip,
     );
   }
 
@@ -159,12 +164,15 @@ export class NotificationWorker extends BaseEventProcessor {
     const supabase = this.supabaseService.getAdminClient();
     const condoId = event.condo_id;
 
-    const { data: sindicos } = await supabase
-      .from('profiles')
-      .select('id, email, whatsapp, whatsapp_opt_in, name')
-      .eq('condominium_id', condoId)
-      .eq('role', 'sindico')
-      .eq('active', true);
+    const [{ data: sindicos }, skip] = await Promise.all([
+      supabase
+        .from('profiles')
+        .select('id, email, whatsapp, whatsapp_opt_in, name')
+        .eq('condominium_id', condoId)
+        .eq('role', 'sindico')
+        .eq('active', true),
+      this.waSettings.isEventDisabled(condoId, DOMAIN_EVENTS.INVITE_ACCEPTED),
+    ]);
 
     if (!sindicos?.length) return;
 
@@ -185,6 +193,7 @@ export class NotificationWorker extends BaseEventProcessor {
           `👋 Novo morador — ${condoName}`,
           newResidentEmail(condoName),
           whatsappTemplates.newResident(condoName),
+          skip,
         );
       }),
     );
@@ -214,9 +223,10 @@ export class NotificationWorker extends BaseEventProcessor {
       p.condominium_id,
     );
 
-    const [profile, condoName] = await Promise.all([
+    const [profile, condoName, skip] = await Promise.all([
       this.getProfile(p.created_by),
       this.getCondoName(p.condominium_id),
+      this.waSettings.isEventDisabled(p.condominium_id, DOMAIN_EVENTS.PROPOSAL_INTERACTION),
     ]);
     if (!profile) return;
 
@@ -225,6 +235,7 @@ export class NotificationWorker extends BaseEventProcessor {
       `👍 Proposta aprovada — ${condoName}`,
       proposalApprovedEmail(condoName),
       whatsappTemplates.proposalInteraction(condoName),
+      skip,
     );
   }
 
@@ -252,9 +263,10 @@ export class NotificationWorker extends BaseEventProcessor {
       p.condominium_id,
     );
 
-    const [profile, condoName] = await Promise.all([
+    const [profile, condoName, skip] = await Promise.all([
       this.getProfile(p.created_by),
       this.getCondoName(p.condominium_id),
+      this.waSettings.isEventDisabled(p.condominium_id, DOMAIN_EVENTS.PROPOSAL_STATUS_CHANGED),
     ]);
     if (!profile) return;
 
@@ -263,21 +275,25 @@ export class NotificationWorker extends BaseEventProcessor {
       `🎉 Proposta convertida — ${condoName}`,
       proposalConvertedEmail(condoName),
       whatsappTemplates.proposalApproved(condoName),
+      skip,
     );
   }
 
   private async notifyRoiUpdated(event: DomainEvent): Promise<void> {
     const payload = event.payload as { messages_avoided: number; tickets_resolved: number };
     const condoId = event.condo_id;
-    const condoName = await this.getCondoName(condoId);
 
     const supabase = this.supabaseService.getAdminClient();
-    const { data: sindicos } = await supabase
-      .from('profiles')
-      .select('id, email, whatsapp, whatsapp_opt_in, name')
-      .eq('condominium_id', condoId)
-      .in('role', ['sindico', 'sindico_administradora'])
-      .eq('active', true);
+    const [{ data: sindicos }, condoName, skip] = await Promise.all([
+      supabase
+        .from('profiles')
+        .select('id, email, whatsapp, whatsapp_opt_in, name')
+        .eq('condominium_id', condoId)
+        .in('role', ['sindico', 'sindico_administradora'])
+        .eq('active', true),
+      this.getCondoName(condoId),
+      this.waSettings.isEventDisabled(condoId, DOMAIN_EVENTS.ROI_UPDATED),
+    ]);
 
     if (!sindicos?.length) return;
 
@@ -288,6 +304,7 @@ export class NotificationWorker extends BaseEventProcessor {
           `📊 Resumo do dia — ${condoName}`,
           roiUpdatedEmail(condoName, payload.messages_avoided, payload.tickets_resolved),
           whatsappTemplates.roiUpdated(condoName, payload.messages_avoided, payload.tickets_resolved),
+          skip,
         ),
       ),
     );

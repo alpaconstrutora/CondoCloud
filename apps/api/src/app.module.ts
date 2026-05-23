@@ -25,6 +25,7 @@ import { ProposalModule } from './modules/proposal/proposal.module';
 import { NotificationModule } from './modules/notification/notification.module';
 import { AiModule } from './modules/ai/ai.module';
 import { MetricsModule } from './modules/metrics/metrics.module';
+import { WhatsappSettingsModule } from './modules/whatsapp-settings/whatsapp-settings.module';
 import { TenantMiddleware } from './common/middleware/tenant.middleware';
 import { AuditInterceptor } from './common/interceptors/audit.interceptor';
 
@@ -63,6 +64,7 @@ import { AuditInterceptor } from './common/interceptors/audit.interceptor';
     NotificationModule,
     AiModule,
     MetricsModule,
+    WhatsappSettingsModule,
   ],
   controllers: [AppController],
   providers: [AppService, AuditInterceptor],

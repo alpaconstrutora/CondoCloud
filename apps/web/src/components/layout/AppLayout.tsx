@@ -17,6 +17,7 @@ const NAV_ITEMS_BASE = [
   { to: '/residents', label: 'Moradores', icon: '👥' },
   { to: '/vendors', label: 'Fornecedores', icon: '🔧' },
   { to: '/reports', label: 'Relatórios', icon: '📊' },
+  { to: '/whatsapp', label: 'WhatsApp', icon: '💬' },
   { to: '/settings', label: 'Configurações', icon: '⚙️' },
 ];
 
