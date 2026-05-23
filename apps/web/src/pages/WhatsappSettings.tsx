@@ -63,6 +63,27 @@ const EVENTS = [
     trigger: 'Job diário de métricas',
     recipients: 'Síndicos e administradores',
   },
+  {
+    name: 'CHARGE_CREATED',
+    label: 'Cobrança emitida',
+    icon: '💰',
+    trigger: 'Síndico emite uma nova cobrança',
+    recipients: 'Morador vinculado à cobrança',
+  },
+  {
+    name: 'MESSAGE_PUBLISHED',
+    label: 'Novo comunicado',
+    icon: '📢',
+    trigger: 'Síndico publica um comunicado',
+    recipients: 'Moradores e prestadores do público-alvo',
+  },
+  {
+    name: 'TICKET_CREATED',
+    label: 'Novo chamado',
+    icon: '🎫',
+    trigger: 'Morador abre um chamado',
+    recipients: 'Síndicos ativos',
+  },
 ] as const;
 
 export default function WhatsappSettings() {

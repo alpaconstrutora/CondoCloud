@@ -14,6 +14,9 @@ import {
   proposalApprovedEmail,
   proposalConvertedEmail,
   roiUpdatedEmail,
+  chargeCreatedEmail,
+  messagePublishedEmail,
+  ticketCreatedEmail,
 } from '../infrastructure/resend/email-templates';
 
 interface ProfileContact {
@@ -58,6 +61,15 @@ export class NotificationWorker extends BaseEventProcessor {
         break;
       case DOMAIN_EVENTS.ROI_UPDATED:
         await this.notifyRoiUpdated(event);
+        break;
+      case DOMAIN_EVENTS.CHARGE_CREATED:
+        await this.notifyChargeCreated(event);
+        break;
+      case DOMAIN_EVENTS.MESSAGE_PUBLISHED:
+        await this.notifyMessagePublished(event);
+        break;
+      case DOMAIN_EVENTS.TICKET_CREATED:
+        await this.notifyTicketCreated(event);
         break;
     }
   }
@@ -276,6 +288,109 @@ export class NotificationWorker extends BaseEventProcessor {
       proposalConvertedEmail(condoName),
       whatsappTemplates.proposalApproved(condoName),
       skip,
+    );
+  }
+
+  private async notifyChargeCreated(event: DomainEvent): Promise<void> {
+    const payload = event.payload as unknown as { profile_id?: string; amount: number; due_date: string; description: string };
+    if (!payload.profile_id) return;
+
+    const [profile, condoName, skip] = await Promise.all([
+      this.getProfile(payload.profile_id),
+      this.getCondoName(event.condo_id),
+      this.waSettings.isEventDisabled(event.condo_id, DOMAIN_EVENTS.CHARGE_CREATED),
+    ]);
+    if (!profile) return;
+
+    await this.deliver(
+      profile,
+      `💰 Nova cobrança — ${condoName}`,
+      chargeCreatedEmail(condoName, payload.description, payload.amount, payload.due_date),
+      whatsappTemplates.chargeCreated(condoName, payload.description, payload.amount, payload.due_date),
+      skip,
+    );
+  }
+
+  private async notifyMessagePublished(event: DomainEvent): Promise<void> {
+    const payload = event.payload as unknown as { title: string; content: string; audience: string; target_id?: string };
+    const condoId = event.condo_id;
+
+    const supabase = this.supabaseService.getAdminClient();
+
+    let profileQuery = supabase
+      .from('profiles')
+      .select('id, email, whatsapp, whatsapp_opt_in, name')
+      .eq('condominium_id', condoId)
+      .eq('active', true)
+      .in('role', ['morador', 'prestador']);
+
+    if (payload.audience === 'block' && payload.target_id) {
+      profileQuery = supabase
+        .from('profiles')
+        .select('id, email, whatsapp, whatsapp_opt_in, name')
+        .eq('condominium_id', condoId)
+        .eq('active', true)
+        .eq('block_id', payload.target_id)
+        .in('role', ['morador', 'prestador']);
+    } else if (payload.audience === 'unit' && payload.target_id) {
+      profileQuery = supabase
+        .from('profiles')
+        .select('id, email, whatsapp, whatsapp_opt_in, name')
+        .eq('condominium_id', condoId)
+        .eq('active', true)
+        .eq('unit_id', payload.target_id)
+        .in('role', ['morador', 'prestador']);
+    }
+
+    const [{ data: profiles }, condoName, skip] = await Promise.all([
+      profileQuery,
+      this.getCondoName(condoId),
+      this.waSettings.isEventDisabled(condoId, DOMAIN_EVENTS.MESSAGE_PUBLISHED),
+    ]);
+
+    if (!profiles?.length) return;
+
+    await Promise.all(
+      (profiles as ProfileContact[]).map((p) =>
+        this.deliver(
+          p,
+          `📢 Novo comunicado — ${condoName}`,
+          messagePublishedEmail(condoName, payload.title, payload.content),
+          whatsappTemplates.messagePublished(condoName, payload.title),
+          skip,
+        ),
+      ),
+    );
+  }
+
+  private async notifyTicketCreated(event: DomainEvent): Promise<void> {
+    const payload = event.payload as unknown as { title: string; category: string; priority: string; created_by: string };
+    const condoId = event.condo_id;
+
+    const supabase = this.supabaseService.getAdminClient();
+    const [{ data: sindicos }, condoName, skip] = await Promise.all([
+      supabase
+        .from('profiles')
+        .select('id, email, whatsapp, whatsapp_opt_in, name')
+        .eq('condominium_id', condoId)
+        .in('role', ['sindico', 'sindico_administradora'])
+        .eq('active', true),
+      this.getCondoName(condoId),
+      this.waSettings.isEventDisabled(condoId, DOMAIN_EVENTS.TICKET_CREATED),
+    ]);
+
+    if (!sindicos?.length) return;
+
+    await Promise.all(
+      (sindicos as ProfileContact[]).map((s) =>
+        this.deliver(
+          s,
+          `🎫 Novo chamado — ${condoName}`,
+          ticketCreatedEmail(condoName, payload.title, payload.category),
+          whatsappTemplates.ticketCreated(condoName, payload.title, payload.category),
+          skip,
+        ),
+      ),
     );
   }
 

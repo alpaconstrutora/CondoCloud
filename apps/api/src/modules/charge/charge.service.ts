@@ -1,5 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { SupabaseService } from '../../infrastructure/supabase/supabase.service';
+import { EventEmitterService } from '../../events/event-emitter.service';
+import { DOMAIN_EVENTS } from '@condocloud/shared';
 import { CreateChargeDto, MarkPaidDto } from './dto/charge.dto';
 
 interface Charge {
@@ -21,7 +23,10 @@ interface Charge {
 
 @Injectable()
 export class ChargeService {
-  constructor(private readonly supabaseService: SupabaseService) {}
+  constructor(
+    private readonly supabaseService: SupabaseService,
+    private readonly eventEmitter: EventEmitterService,
+  ) {}
 
   async create(condoId: string, dto: CreateChargeDto): Promise<Charge> {
     const { data, error } = await this.supabaseService
@@ -32,7 +37,24 @@ export class ChargeService {
       .single();
 
     if (error) throw new Error(error.message);
-    return data as Charge;
+
+    const charge = data as Charge;
+    await this.eventEmitter.emit({
+      event_name: DOMAIN_EVENTS.CHARGE_CREATED,
+      aggregate_id: charge.id,
+      aggregate_type: 'charge',
+      event_version: 1,
+      source: 'api',
+      condo_id: condoId,
+      payload: {
+        profile_id: charge.profile_id,
+        amount: charge.amount,
+        due_date: charge.due_date,
+        description: charge.description,
+      },
+    });
+
+    return charge;
   }
 
   async findAll(condoId: string, status?: string, competencia?: string): Promise<Charge[]> {

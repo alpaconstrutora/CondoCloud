@@ -21,6 +21,11 @@ export const DOMAIN_EVENTS = {
 
   // ── RETENÇÃO / CONTROLE ───────────────────────────────────
   NOTIFICATION_ENGAGEMENT_UPDATED: 'notification_engagement_updated',
+
+  // ── OPERACIONAIS ──────────────────────────────────────────
+  CHARGE_CREATED: 'charge_created',
+  MESSAGE_PUBLISHED: 'message_published',
+  TICKET_CREATED: 'ticket_created',
 } as const;
 
 export type DomainEventName = (typeof DOMAIN_EVENTS)[keyof typeof DOMAIN_EVENTS];
@@ -45,6 +50,9 @@ export interface DomainEventPayloads {
   };
   proposal_status_changed: { status: 'approved' | 'rejected' };
   notification_engagement_updated: { action: 'opened' | 'clicked' | 'ignored' };
+  charge_created: { profile_id?: string; amount: number; due_date: string; description: string };
+  message_published: { title: string; content: string; audience: string; target_id?: string };
+  ticket_created: { title: string; category: string; priority: string; created_by: string };
 }
 
 // Schema completo de evento (obrigatório em TODO emit)
@@ -60,7 +68,9 @@ export interface DomainEvent<T extends keyof DomainEventPayloads = keyof DomainE
     | 'ticket'
     | 'reservation'
     | 'assembly'
-    | 'notification';
+    | 'notification'
+    | 'charge'
+    | 'message';
   event_version: number; // incremental por aggregate — detecta fora de ordem
   source: 'api' | 'worker' | 'job' | 'system';
   condo_id: string; // tenant isolation obrigatório

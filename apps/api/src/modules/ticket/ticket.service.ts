@@ -29,7 +29,24 @@ export class TicketService {
       .single();
 
     if (error) throw new Error(error.message);
-    return data as Ticket;
+
+    const ticket = data as Ticket;
+    await this.eventEmitter.emit({
+      event_name: DOMAIN_EVENTS.TICKET_CREATED,
+      aggregate_id: ticket.id,
+      aggregate_type: 'ticket',
+      event_version: 1,
+      source: 'api',
+      condo_id: condoId,
+      payload: {
+        title: ticket.title,
+        category: ticket.category,
+        priority: ticket.priority,
+        created_by: createdBy,
+      },
+    });
+
+    return ticket;
   }
 
   async findAll(condoId: string, status?: string): Promise<Ticket[]> {

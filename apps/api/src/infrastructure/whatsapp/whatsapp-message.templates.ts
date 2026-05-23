@@ -13,4 +13,16 @@ export const whatsappTemplates = {
 
   roiUpdated: (condoName: string, messagesAvoided: number, ticketsResolved: number) =>
     `📊 *CondoCloud — ${condoName}*\n\nResumo do dia:\n• *${messagesAvoided}* mensagens digitais enviadas\n• *${ticketsResolved}* chamados resolvidos no total\n\nAcesse o painel para ver o relatório completo.`,
+
+  chargeCreated: (condoName: string, description: string, amount: number, dueDate: string) => {
+    const formatted = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(amount);
+    const due = new Date(dueDate + 'T00:00:00').toLocaleDateString('pt-BR');
+    return `💰 *CondoCloud — ${condoName}*\n\nNova cobrança emitida:\n_${description}_\n\nValor: *${formatted}*\nVencimento: *${due}*\n\nAcesse o app para ver os detalhes.`;
+  },
+
+  messagePublished: (condoName: string, title: string) =>
+    `📢 *CondoCloud — ${condoName}*\n\nNovo comunicado:\n_"${title}"_\n\nAcesse o app para ler o comunicado completo.`,
+
+  ticketCreated: (condoName: string, title: string, category: string) =>
+    `🎫 *CondoCloud — ${condoName}*\n\nNovo chamado aberto:\n_"${title}"_\nCategoria: *${category}*\n\nAcesse o painel para gerenciar o chamado.`,
 };

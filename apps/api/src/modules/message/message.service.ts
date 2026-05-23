@@ -1,5 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { SupabaseService } from '../../infrastructure/supabase/supabase.service';
+import { EventEmitterService } from '../../events/event-emitter.service';
+import { DOMAIN_EVENTS } from '@condocloud/shared';
 import { CreateMessageDto } from './dto/message.dto';
 import type { Message, MessageWithMeta, MessagesPage } from '@condocloud/shared';
 import type { UserRole } from '@condocloud/shared';
@@ -8,7 +10,10 @@ const DEFAULT_PAGE_SIZE = 20;
 
 @Injectable()
 export class MessageService {
-  constructor(private readonly supabaseService: SupabaseService) {}
+  constructor(
+    private readonly supabaseService: SupabaseService,
+    private readonly eventEmitter: EventEmitterService,
+  ) {}
 
   async create(condoId: string, createdBy: string, dto: CreateMessageDto): Promise<Message> {
     const { data, error } = await this.supabaseService
@@ -25,10 +30,30 @@ export class MessageService {
 
     if (error) throw new Error(error.message);
 
-    // Disparar notificação push para os destinatários
-    await this.broadcastNotification(condoId, data as Message, dto);
+    const message = data as Message;
 
-    return data as Message;
+    // Disparar notificação push para os destinatários
+    await this.broadcastNotification(condoId, message, dto);
+
+    // Emitir evento para WhatsApp (apenas comunicados publicados imediatamente)
+    if (!dto.publish_at || new Date(dto.publish_at) <= new Date()) {
+      await this.eventEmitter.emit({
+        event_name: DOMAIN_EVENTS.MESSAGE_PUBLISHED,
+        aggregate_id: message.id,
+        aggregate_type: 'message',
+        event_version: 1,
+        source: 'api',
+        condo_id: condoId,
+        payload: {
+          title: message.title,
+          content: message.content?.substring(0, 200) ?? '',
+          audience: dto.audience ?? 'all',
+          target_id: dto.target_id,
+        },
+      });
+    }
+
+    return message;
   }
 
   async findAll(

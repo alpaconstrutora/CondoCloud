@@ -53,6 +53,38 @@ export function proposalConvertedEmail(condoName: string): string {
   `);
 }
 
+export function chargeCreatedEmail(condoName: string, description: string, amount: number, dueDate: string): string {
+  const formatted = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(amount);
+  const due = new Date(dueDate + 'T00:00:00').toLocaleDateString('pt-BR');
+  return layout(condoName, `
+    <p>💰 <strong>Nova cobrança emitida</strong></p>
+    <p><em>${description}</em></p>
+    <table style="width:100%;border-collapse:collapse;margin:12px 0">
+      <tr><td style="color:#6b7280;font-size:13px;padding:4px 0">Valor</td><td style="font-weight:700;text-align:right">${formatted}</td></tr>
+      <tr><td style="color:#6b7280;font-size:13px;padding:4px 0">Vencimento</td><td style="font-weight:700;text-align:right">${due}</td></tr>
+    </table>
+    <p>Acesse o aplicativo para ver os detalhes e formas de pagamento.</p>
+  `);
+}
+
+export function messagePublishedEmail(condoName: string, title: string, content: string): string {
+  return layout(condoName, `
+    <p>📢 <strong>Novo comunicado</strong></p>
+    <p style="font-size:17px;font-weight:700">${title}</p>
+    <p>${content}</p>
+    <p style="color:#6b7280;font-size:13px">Acesse o aplicativo para ler o comunicado completo.</p>
+  `);
+}
+
+export function ticketCreatedEmail(condoName: string, title: string, category: string): string {
+  return layout(condoName, `
+    <p>🎫 <strong>Novo chamado aberto</strong></p>
+    <p><em>"${title}"</em></p>
+    <p>Categoria: <strong>${category}</strong></p>
+    <p>Acesse o painel para gerenciar e responder ao chamado.</p>
+  `);
+}
+
 export function roiUpdatedEmail(condoName: string, messagesAvoided: number, ticketsResolved: number): string {
   return layout(condoName, `
     <p>📊 <strong>Resumo do dia — ${condoName}</strong></p>
