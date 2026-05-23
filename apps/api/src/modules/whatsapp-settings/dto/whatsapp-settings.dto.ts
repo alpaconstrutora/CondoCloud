@@ -1,4 +1,4 @@
-import { IsBoolean, IsString } from 'class-validator';
+import { IsBoolean, IsOptional, IsString } from 'class-validator';
 
 export class ToggleEventDto {
   @IsString()
@@ -9,9 +9,11 @@ export class ToggleEventDto {
 }
 
 export class UpdateProfileWaDto {
+  @IsOptional()
   @IsString()
   whatsapp?: string;
 
+  @IsOptional()
   @IsBoolean()
   whatsapp_opt_in?: boolean;
 }

@@ -22,19 +22,43 @@ export class WhatsappSettingsService {
   async getSettings(condoId: string): Promise<WhatsappSettings> {
     const db = this.supabase.getAdminClient();
 
-    const [{ data: condo }, { data: profiles }] = await Promise.all([
+    const [condoRes, profilesRes] = await Promise.all([
       db.from('condominiums').select('whatsapp_disabled_events').eq('id', condoId).single(),
       db
         .from('profiles')
-        .select('id, name, role, whatsapp, whatsapp_opt_in, units!unit_id(number)')
+        .select('id, name, role, whatsapp, whatsapp_opt_in, unit_id')
         .eq('condominium_id', condoId)
         .eq('active', true)
         .order('name'),
     ]);
 
+    const rawProfiles = (profilesRes.data ?? []) as Array<{
+      id: string; name?: string; role: string; whatsapp?: string;
+      whatsapp_opt_in: boolean; unit_id?: string | null;
+    }>;
+
+    // Buscar unidades para exibir o número (sem depender do join FK)
+    const unitIds = [...new Set(rawProfiles.map(p => p.unit_id).filter(Boolean))] as string[];
+    let unitMap: Record<string, string> = {};
+    if (unitIds.length > 0) {
+      const { data: units } = await db.from('units').select('id, number').in('id', unitIds);
+      if (units) {
+        (units as { id: string; number: string }[]).forEach(u => { unitMap[u.id] = u.number; });
+      }
+    }
+
+    const profiles: ProfileWa[] = rawProfiles.map(p => ({
+      id: p.id,
+      name: p.name,
+      role: p.role,
+      whatsapp: p.whatsapp,
+      whatsapp_opt_in: p.whatsapp_opt_in,
+      units: p.unit_id && unitMap[p.unit_id] ? [{ number: unitMap[p.unit_id] }] : null,
+    }));
+
     return {
-      disabled_events: (condo as { whatsapp_disabled_events?: string[] } | null)?.whatsapp_disabled_events ?? [],
-      profiles: (profiles ?? []) as unknown as ProfileWa[],
+      disabled_events: (condoRes.data as { whatsapp_disabled_events?: string[] } | null)?.whatsapp_disabled_events ?? [],
+      profiles,
     };
   }
 
