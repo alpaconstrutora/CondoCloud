@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { TipoMoradorService } from './tipo-morador.service';
 import { CurrentTenant } from '../../common/decorators/current-tenant.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -20,8 +20,10 @@ export class TipoMoradorController {
   @Post()
   async create(
     @CurrentTenant() condoId: string,
-    @Body('nome') nome: string,
+    @Body() body: Record<string, string>,
   ): Promise<ApiResponse> {
+    const nome = body?.nome?.trim();
+    if (!nome) throw new BadRequestException('Nome é obrigatório');
     const data = await this.tipoMoradorService.create(condoId, nome);
     return ApiResponse.ok(data, 'Tipo criado com sucesso');
   }
@@ -30,8 +32,10 @@ export class TipoMoradorController {
   async update(
     @CurrentTenant() condoId: string,
     @Param('id') id: string,
-    @Body('nome') nome: string,
+    @Body() body: Record<string, string>,
   ): Promise<ApiResponse> {
+    const nome = body?.nome?.trim();
+    if (!nome) throw new BadRequestException('Nome é obrigatório');
     const data = await this.tipoMoradorService.update(condoId, id, nome);
     return ApiResponse.ok(data, 'Tipo atualizado');
   }

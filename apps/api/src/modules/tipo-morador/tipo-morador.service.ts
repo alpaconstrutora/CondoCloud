@@ -26,7 +26,7 @@ export class TipoMoradorService {
     const { data, error } = await this.supabaseService
       .getAdminClient()
       .from('tipos_morador')
-      .insert({ nome: nome.trim(), condominium_id: condoId })
+      .insert({ nome, condominium_id: condoId })
       .select()
       .single();
     if (error) throw new Error(error.message);
@@ -37,7 +37,7 @@ export class TipoMoradorService {
     const { data, error } = await this.supabaseService
       .getAdminClient()
       .from('tipos_morador')
-      .update({ nome: nome.trim() })
+      .update({ nome })
       .eq('id', id)
       .eq('condominium_id', condoId)
       .select()
