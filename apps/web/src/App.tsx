@@ -27,6 +27,9 @@ import Profile from './pages/Profile';
 import MultiCondoDashboard from './pages/MultiCondoDashboard';
 import Reports from './pages/Reports';
 import WhatsappSettings from './pages/WhatsappSettings';
+import BillingBlocked from './pages/BillingBlocked';
+import Billing from './pages/Billing';
+import Proposals from './pages/Proposals';
 
 export default function App() {
   return (
@@ -42,6 +45,9 @@ export default function App() {
 
         {/* Onboarding — protegida mas sem sidebar */}
         <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
+
+        {/* Billing bloqueado — protegida mas sem sidebar */}
+        <Route path="/billing-blocked" element={<ProtectedRoute><BillingBlocked /></ProtectedRoute>} />
 
         {/* Protegidas — com sidebar */}
         <Route
@@ -67,6 +73,8 @@ export default function App() {
           <Route path="/vendors" element={<Vendors />} />
           <Route path="/reports" element={<Reports />} />
           <Route path="/whatsapp" element={<WhatsappSettings />} />
+          <Route path="/billing" element={<Billing />} />
+          <Route path="/proposals" element={<Proposals />} />
           <Route path="/settings" element={<CondoSettings />} />
           <Route path="/profile" element={<Profile />} />
         </Route>

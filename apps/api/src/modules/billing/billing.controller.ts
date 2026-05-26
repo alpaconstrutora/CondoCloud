@@ -5,12 +5,27 @@ import { CreateCheckoutDto } from './dto/billing.dto';
 import { CurrentTenant } from '../../common/decorators/current-tenant.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
-import { Public } from '../../common/decorators/public.decorator';
+import { Public, SkipTenant } from '../../common/decorators/public.decorator';
 import { ApiResponse } from '../../common/dto/api-response.dto';
 
 @Controller('billing')
 export class BillingController {
   constructor(private readonly billingService: BillingService) {}
+
+  @SkipTenant()
+  @Get('plans')
+  async plans(): Promise<ApiResponse> {
+    const result = await this.billingService.listPlans();
+    return ApiResponse.ok(result);
+  }
+
+  @Get('status')
+  @UseGuards(RolesGuard)
+  @Roles('sindico', 'sindico_administradora', 'desenvolvedor')
+  async status(@CurrentTenant() condoId: string): Promise<ApiResponse> {
+    const result = await this.billingService.getStatus(condoId);
+    return ApiResponse.ok(result);
+  }
 
   @Post('checkout')
   @UseGuards(RolesGuard)

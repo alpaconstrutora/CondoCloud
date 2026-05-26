@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { api } from '../lib/api';
+import { registerForPushNotifications } from '../lib/push-notifications';
 
 interface Profile {
   id: string;
@@ -30,11 +31,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [profileLoading, setProfileLoading] = useState(false);
 
-  async function fetchProfile() {
+  async function fetchProfile(registerPush = false) {
     setProfileLoading(true);
     try {
       const res = await api.get<{ data: Profile }>('/auth/me');
       setProfile(res.data);
+
+      // Registra push token após login bem-sucedido
+      if (registerPush) {
+        registerForPushNotifications().catch(() => {});
+      }
     } catch {
       setProfile(null);
     } finally {
@@ -46,15 +52,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     supabase.auth.getSession()
       .then(({ data }) => {
         setSession(data.session);
-        if (data.session) fetchProfile();
+        if (data.session) fetchProfile(true);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, s) => {
       setSession(s);
       if (s) {
-        fetchProfile();
+        // Registra push apenas no evento de login (não em refreshes de token)
+        const isLogin = event === 'SIGNED_IN';
+        fetchProfile(isLogin);
       } else {
         setProfile(null);
       }

@@ -24,6 +24,24 @@ interface CondoRow {
   stripe_subscription_id?: string;
   subscription_status: string;
   name: string;
+  past_due_since?: string | null;
+  trial_ends_at?: string | null;
+}
+
+export interface BillingStatusResult {
+  subscription_status: string;
+  plan_name: string;
+  plan_price_monthly: number | null;
+  trial_ends_at: string | null;
+  past_due_since: string | null;
+  days_until_blocked: number | null;
+  stripe_customer_id: string | null;
+  usage: {
+    units: number;
+    max_units: number;
+    residents: number;
+    max_residents: number;
+  };
 }
 
 @Injectable()
@@ -58,11 +76,13 @@ export class BillingService {
     if (!condo) throw new BadRequestException('Condomínio não encontrado');
     const condoRow = condo as CondoRow;
 
-    const { data: plan } = await supabase
-      .from('plans')
-      .select('stripe_price_id, name')
-      .eq('id', dto.plan_id)
-      .single();
+    if (!dto.plan_id && !dto.plan_name) {
+      throw new BadRequestException('Forneça plan_id ou plan_name');
+    }
+
+    const { data: plan } = dto.plan_id
+      ? await supabase.from('plans').select('stripe_price_id, name').eq('id', dto.plan_id).single()
+      : await supabase.from('plans').select('stripe_price_id, name').eq('name', dto.plan_name!).single();
 
     if (!plan) throw new BadRequestException('Plano não encontrado');
     const planRow = plan as { stripe_price_id: string; name: string };
@@ -161,6 +181,63 @@ export class BillingService {
           .eq('id', condoId);
         break;
     }
+  }
+
+  async listPlans(): Promise<unknown[]> {
+    const { data } = await this.supabaseService
+      .getAdminClient()
+      .from('plans')
+      .select('id, name, price_monthly, features')
+      .order('price_monthly', { ascending: true });
+    return data ?? [];
+  }
+
+  async getStatus(condoId: string): Promise<BillingStatusResult> {
+    const supabase = this.supabaseService.getAdminClient();
+
+    const { data: condo } = await supabase
+      .from('condominiums')
+      .select('*, plans(name, price_monthly)')
+      .eq('id', condoId)
+      .single();
+
+    if (!condo) throw new BadRequestException('Condomínio não encontrado');
+    const c = condo as CondoRow & { plans?: { name: string; price_monthly: number } | null };
+
+    // Contagem de uso
+    const [{ count: unitsCount }, { count: residentsCount }] = await Promise.all([
+      supabase.from('units').select('*', { count: 'exact', head: true }).eq('condominium_id', condoId),
+      supabase.from('profiles').select('*', { count: 'exact', head: true })
+        .eq('condominium_id', condoId).eq('role', 'morador').eq('active', true),
+    ]);
+
+    const planName = c.plans?.name ?? 'starter';
+    const maxUnits = planName === 'enterprise' ? 9999 : planName === 'pro' ? 200 : 50;
+    const maxResidents = planName === 'enterprise' ? 9999 : planName === 'pro' ? 400 : 100;
+
+    let daysUntilBlocked: number | null = null;
+    if (c.subscription_status === 'past_due' && c.past_due_since) {
+      const daysPastDue = Math.floor(
+        (Date.now() - new Date(c.past_due_since).getTime()) / 86_400_000,
+      );
+      daysUntilBlocked = Math.max(0, 30 - daysPastDue);
+    }
+
+    return {
+      subscription_status: c.subscription_status,
+      plan_name: planName,
+      plan_price_monthly: c.plans?.price_monthly ?? null,
+      trial_ends_at: c.trial_ends_at ?? null,
+      past_due_since: c.past_due_since ?? null,
+      days_until_blocked: daysUntilBlocked,
+      stripe_customer_id: c.stripe_customer_id ?? null,
+      usage: {
+        units: unitsCount ?? 0,
+        max_units: maxUnits,
+        residents: residentsCount ?? 0,
+        max_residents: maxResidents,
+      },
+    };
   }
 
   private async syncSubscription(sub: Record<string, unknown>): Promise<void> {

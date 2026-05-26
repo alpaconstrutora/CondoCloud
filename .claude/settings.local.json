@@ -35,7 +35,10 @@
       "Bash(pnpm run *)",
       "Bash(awk '{print $5}')",
       "Bash(xargs -I{} taskkill //PID {} //F)",
-      "Bash(curl -s http://localhost:3001/api/v1/auth/me -H \"Authorization: Bearer test\")"
+      "Bash(curl -s http://localhost:3001/api/v1/auth/me -H \"Authorization: Bearer test\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" https://condocloud.onrender.com/privacy)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)"
     ]
   }
 }

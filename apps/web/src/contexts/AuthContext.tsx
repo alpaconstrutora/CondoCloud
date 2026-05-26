@@ -8,6 +8,22 @@ interface Condominium {
   name: string;
   onboarding_completed: boolean;
   subscription_status?: string;
+  past_due_since?: string | null;
+  trial_ends_at?: string | null;
+}
+
+export type SystemState = 'active' | 'trialing' | 'billing_warning' | 'billing_blocked' | 'onboarding';
+
+function resolveState(condo: Partial<Condominium>): SystemState {
+  const { subscription_status, past_due_since, onboarding_completed } = condo;
+  if (subscription_status === 'canceled' || subscription_status === 'paused') return 'billing_blocked';
+  if (subscription_status === 'past_due' && past_due_since) {
+    const days = Math.floor((Date.now() - new Date(past_due_since).getTime()) / 86_400_000);
+    return days >= 30 ? 'billing_blocked' : 'billing_warning';
+  }
+  if (subscription_status === 'trialing') return 'trialing';
+  if (!onboarding_completed) return 'onboarding';
+  return 'active';
 }
 
 interface Profile {
@@ -15,7 +31,7 @@ interface Profile {
   name?: string;
   role?: string;
   condominium_id?: string;
-  condominiums?: { onboarding_completed: boolean };
+  condominiums?: Condominium;
 }
 
 const MULTI_CONDO_ROLES = ['desenvolvedor', 'sindico_administradora'];
@@ -27,6 +43,8 @@ interface AuthContextValue {
   loading: boolean;
   profileLoading: boolean;
   onboardingCompleted: boolean;
+  systemState: SystemState;
+  activeCondominium: Condominium | null;
   // Multi-condo
   myCondominiums: Condominium[];
   activeCondominiumId: string | null;
@@ -130,6 +148,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isMultiCondo = !!profile?.role && MULTI_CONDO_ROLES.includes(profile.role);
   const onboardingCompleted = profile?.condominiums?.onboarding_completed ?? false;
 
+  // Condomínio ativo: para multi-condo usa a lista; para síndico único usa do profile
+  const activeCondominium: Condominium | null = isMultiCondo
+    ? myCondominiums.find((c) => c.id === activeCondominiumId) ?? null
+    : profile?.condominiums ?? null;
+
+  const systemState: SystemState = activeCondominium
+    ? resolveState(activeCondominium)
+    : profile && !onboardingCompleted
+      ? 'onboarding'
+      : 'active';
+
   return (
     <AuthContext.Provider value={{
       session,
@@ -138,6 +167,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       loading,
       profileLoading,
       onboardingCompleted,
+      systemState,
+      activeCondominium,
       myCondominiums,
       activeCondominiumId,
       switchCondominium,

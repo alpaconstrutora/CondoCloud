@@ -22,7 +22,7 @@ export default function AppLayout() {
           paddingBottom: 4,
           height: 60,
         },
-        tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
+        tabBarLabelStyle: { fontSize: 10, fontWeight: '600' },
       }}
     >
       <Tabs.Screen
@@ -54,16 +54,36 @@ export default function AppLayout() {
         }}
       />
       <Tabs.Screen
+        name="assemblies"
+        options={{
+          title: 'Assembleias',
+          tabBarIcon: ({ focused }) => tabIcon(focused, 'people', 'people-outline'),
+        }}
+      />
+      <Tabs.Screen
+        name="reservations"
+        options={{
+          title: 'Reservas',
+          tabBarIcon: ({ focused }) => tabIcon(focused, 'calendar', 'calendar-outline'),
+        }}
+      />
+      <Tabs.Screen
+        name="documents"
+        options={{
+          title: 'Docs',
+          tabBarIcon: ({ focused }) => tabIcon(focused, 'folder', 'folder-outline'),
+        }}
+      />
+      <Tabs.Screen
         name="profile"
         options={{
           title: 'Perfil',
           tabBarIcon: ({ focused }) => tabIcon(focused, 'person', 'person-outline'),
         }}
       />
-      {/* Hidden from tabs but navigable */}
+
+      {/* Ocultos da tab bar mas navegáveis */}
       <Tabs.Screen name="tickets/[id]" options={{ href: null }} />
-      <Tabs.Screen name="reservations" options={{ href: null }} />
-      <Tabs.Screen name="documents" options={{ href: null }} />
     </Tabs>
   );
 }

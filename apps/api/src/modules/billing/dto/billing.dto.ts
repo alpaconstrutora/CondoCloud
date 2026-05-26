@@ -1,7 +1,8 @@
 import { IsOptional, IsString, IsUUID } from 'class-validator';
 
 export class CreateCheckoutDto {
-  @IsUUID() plan_id!: string;
+  @IsOptional() @IsUUID() plan_id?: string;
+  @IsOptional() @IsString() plan_name?: string; // alternativa ao plan_id
   @IsOptional() @IsString() success_url?: string;
   @IsOptional() @IsString() cancel_url?: string;
 }

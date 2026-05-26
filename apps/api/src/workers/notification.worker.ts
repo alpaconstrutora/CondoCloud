@@ -7,6 +7,7 @@ import { BaseEventProcessor } from '../events/event-processor.base';
 import { ResendService } from '../infrastructure/resend/resend.service';
 import { WhatsAppService } from '../infrastructure/whatsapp/whatsapp.service';
 import { WhatsappSettingsService } from '../modules/whatsapp-settings/whatsapp-settings.service';
+import { ExpoPushService } from '../infrastructure/expo/expo-push.service';
 import { whatsappTemplates } from '../infrastructure/whatsapp/whatsapp-message.templates';
 import {
   ticketResolvedEmail,
@@ -25,6 +26,7 @@ interface ProfileContact {
   whatsapp?: string;
   whatsapp_opt_in?: boolean;
   name?: string;
+  push_token?: string | null;
 }
 
 @Processor(QUEUE_NAMES.NOTIFICATIONS)
@@ -36,6 +38,7 @@ export class NotificationWorker extends BaseEventProcessor {
     private readonly resend: ResendService,
     private readonly whatsapp: WhatsAppService,
     private readonly waSettings: WhatsappSettingsService,
+    private readonly expoPush: ExpoPushService,
   ) {
     super(supabaseService);
   }
@@ -80,7 +83,7 @@ export class NotificationWorker extends BaseEventProcessor {
     const { data } = await this.supabaseService
       .getAdminClient()
       .from('profiles')
-      .select('id, email, whatsapp, whatsapp_opt_in, name')
+      .select('id, email, whatsapp, whatsapp_opt_in, name, push_token')
       .eq('id', profileId)
       .single();
     return data as ProfileContact | null;
@@ -104,12 +107,20 @@ export class NotificationWorker extends BaseEventProcessor {
     skipWhatsapp = false,
   ): Promise<void> {
     const tasks: Promise<void>[] = [];
+
     if (profile.email) {
       tasks.push(this.resend.sendEmail(profile.email, subject, html));
     }
+
     if (!skipWhatsapp && profile.whatsapp && profile.whatsapp_opt_in) {
       tasks.push(this.whatsapp.sendMessage(profile.whatsapp, whatsappText, profile.id));
     }
+
+    // Push notification via Expo (best-effort)
+    if (profile.push_token) {
+      tasks.push(this.expoPush.sendOne(profile.push_token, subject, whatsappText));
+    }
+
     await Promise.allSettled(tasks);
   }
 
@@ -179,7 +190,7 @@ export class NotificationWorker extends BaseEventProcessor {
     const [{ data: sindicos }, skip] = await Promise.all([
       supabase
         .from('profiles')
-        .select('id, email, whatsapp, whatsapp_opt_in, name')
+        .select('id, email, whatsapp, whatsapp_opt_in, name, push_token')
         .eq('condominium_id', condoId)
         .eq('role', 'sindico')
         .eq('active', true),
@@ -319,7 +330,7 @@ export class NotificationWorker extends BaseEventProcessor {
 
     let profileQuery = supabase
       .from('profiles')
-      .select('id, email, whatsapp, whatsapp_opt_in, name')
+      .select('id, email, whatsapp, whatsapp_opt_in, name, push_token')
       .eq('condominium_id', condoId)
       .eq('active', true)
       .in('role', ['morador', 'prestador']);
@@ -327,7 +338,7 @@ export class NotificationWorker extends BaseEventProcessor {
     if (payload.audience === 'block' && payload.target_id) {
       profileQuery = supabase
         .from('profiles')
-        .select('id, email, whatsapp, whatsapp_opt_in, name')
+        .select('id, email, whatsapp, whatsapp_opt_in, name, push_token')
         .eq('condominium_id', condoId)
         .eq('active', true)
         .eq('block_id', payload.target_id)
@@ -335,7 +346,7 @@ export class NotificationWorker extends BaseEventProcessor {
     } else if (payload.audience === 'unit' && payload.target_id) {
       profileQuery = supabase
         .from('profiles')
-        .select('id, email, whatsapp, whatsapp_opt_in, name')
+        .select('id, email, whatsapp, whatsapp_opt_in, name, push_token')
         .eq('condominium_id', condoId)
         .eq('active', true)
         .eq('unit_id', payload.target_id)
@@ -371,7 +382,7 @@ export class NotificationWorker extends BaseEventProcessor {
     const [{ data: sindicos }, condoName, skip] = await Promise.all([
       supabase
         .from('profiles')
-        .select('id, email, whatsapp, whatsapp_opt_in, name')
+        .select('id, email, whatsapp, whatsapp_opt_in, name, push_token')
         .eq('condominium_id', condoId)
         .in('role', ['sindico', 'sindico_administradora'])
         .eq('active', true),
@@ -402,7 +413,7 @@ export class NotificationWorker extends BaseEventProcessor {
     const [{ data: sindicos }, condoName, skip] = await Promise.all([
       supabase
         .from('profiles')
-        .select('id, email, whatsapp, whatsapp_opt_in, name')
+        .select('id, email, whatsapp, whatsapp_opt_in, name, push_token')
         .eq('condominium_id', condoId)
         .in('role', ['sindico', 'sindico_administradora'])
         .eq('active', true),

@@ -18,6 +18,8 @@ const NAV_ITEMS_BASE = [
   { to: '/vendors', label: 'Fornecedores', icon: '🔧' },
   { to: '/reports', label: 'Relatórios', icon: '📊' },
   { to: '/whatsapp', label: 'WhatsApp', icon: '💬' },
+  { to: '/proposals', label: 'Propostas', icon: '📄' },
+  { to: '/billing', label: 'Assinatura', icon: '💳' },
   { to: '/settings', label: 'Configurações', icon: '⚙️' },
 ];
 
@@ -106,8 +108,44 @@ function NotificationBell() {
   );
 }
 
+function BillingWarningBanner() {
+  const { activeCondominium } = useAuth();
+  if (!activeCondominium?.past_due_since) return null;
+
+  const daysPastDue = Math.floor(
+    (Date.now() - new Date(activeCondominium.past_due_since).getTime()) / 86_400_000,
+  );
+  const daysLeft = Math.max(0, 30 - daysPastDue);
+
+  return (
+    <div
+      style={{
+        background: '#FEF3C7',
+        borderBottom: '1.5px solid #F59E0B',
+        padding: '10px 20px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10,
+        fontSize: '0.875rem',
+        color: '#92400E',
+        fontWeight: 600,
+      }}
+    >
+      <span style={{ fontSize: '1.1rem' }}>⚠️</span>
+      <span>
+        Pagamento pendente. Seu acesso será bloqueado em{' '}
+        <strong>{daysLeft} dia{daysLeft !== 1 ? 's' : ''}</strong>.{' '}
+        <a href="mailto:suporte@condocloud.com.br" style={{ color: '#92400E', textDecoration: 'underline' }}>
+          Regularize agora
+        </a>
+        .
+      </span>
+    </div>
+  );
+}
+
 export default function AppLayout() {
-  const { user, signOut, isMultiCondo } = useAuth();
+  const { user, signOut, isMultiCondo, systemState } = useAuth();
   const NAV_ITEMS = isMultiCondo ? [NAV_ITEM_OVERVIEW, ...NAV_ITEMS_BASE] : NAV_ITEMS_BASE;
   const navigate = useNavigate();
 
@@ -167,6 +205,7 @@ export default function AppLayout() {
       </aside>
 
       <main className={styles.main}>
+        {systemState === 'billing_warning' && <BillingWarningBanner />}
         <Outlet />
       </main>
     </div>
