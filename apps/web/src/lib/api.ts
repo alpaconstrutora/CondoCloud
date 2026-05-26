@@ -13,7 +13,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const activeCondoId = localStorage.getItem(ACTIVE_CONDO_KEY);
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 30_000);
+  const timeout = setTimeout(() => controller.abort(), 60_000);
 
   let res: Response;
   try {

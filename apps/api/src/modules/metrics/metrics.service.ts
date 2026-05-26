@@ -73,37 +73,24 @@ export class MetricsService {
 
     const supabase = this.supabaseService.getAdminClient();
 
-    const [tickets, residents, charges, messages] = await Promise.all([
-      supabase
-        .from('tickets')
-        .select('status')
-        .eq('condominium_id', condoId),
-      supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true })
-        .eq('condominium_id', condoId)
-        .eq('role', 'morador')
-        .eq('active', true),
-      supabase
-        .from('charges')
-        .select('status')
-        .eq('condominium_id', condoId),
-      supabase
-        .from('messages')
-        .select('*', { count: 'exact', head: true })
-        .eq('condominium_id', condoId),
-    ]);
-
-    const ticketRows = (tickets.data ?? []) as { status: string }[];
-    const chargeRows = (charges.data ?? []) as { status: string }[];
+    const [ticketsOpen, ticketsInProgress, ticketsResolved, residents, chargesPending, chargesOverdue, messages] =
+      await Promise.all([
+        supabase.from('tickets').select('*', { count: 'exact', head: true }).eq('condominium_id', condoId).eq('status', 'open'),
+        supabase.from('tickets').select('*', { count: 'exact', head: true }).eq('condominium_id', condoId).eq('status', 'in_progress'),
+        supabase.from('tickets').select('*', { count: 'exact', head: true }).eq('condominium_id', condoId).eq('status', 'resolved'),
+        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('condominium_id', condoId).eq('role', 'morador').eq('active', true),
+        supabase.from('charges').select('*', { count: 'exact', head: true }).eq('condominium_id', condoId).eq('status', 'pending'),
+        supabase.from('charges').select('*', { count: 'exact', head: true }).eq('condominium_id', condoId).eq('status', 'overdue'),
+        supabase.from('messages').select('*', { count: 'exact', head: true }).eq('condominium_id', condoId),
+      ]);
 
     return {
-      tickets_open: ticketRows.filter((t) => t.status === 'open').length,
-      tickets_in_progress: ticketRows.filter((t) => t.status === 'in_progress').length,
-      tickets_resolved: ticketRows.filter((t) => t.status === 'resolved').length,
+      tickets_open: ticketsOpen.count ?? 0,
+      tickets_in_progress: ticketsInProgress.count ?? 0,
+      tickets_resolved: ticketsResolved.count ?? 0,
       active_residents: residents.count ?? 0,
-      charges_pending: chargeRows.filter((c) => c.status === 'pending').length,
-      charges_overdue: chargeRows.filter((c) => c.status === 'overdue').length,
+      charges_pending: chargesPending.count ?? 0,
+      charges_overdue: chargesOverdue.count ?? 0,
       total_messages: messages.count ?? 0,
     };
   }

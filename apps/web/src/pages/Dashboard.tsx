@@ -115,7 +115,9 @@ export default function Dashboard() {
         <div className={styles.errorBanner}>
           {error.includes('403') || error.includes('401')
             ? 'Condomínio não configurado. Complete o onboarding para ver os dados.'
-            : `Erro ao carregar: ${error}`}
+            : error.includes('Tempo limite')
+              ? 'O servidor está inicializando. Aguarde alguns segundos e recarregue a página.'
+              : `Erro ao carregar: ${error}`}
         </div>
       )}
 
