@@ -1,0 +1,37 @@
+# Dependências — reinstaladas no build
+node_modules
+**/node_modules
+
+# Outputs de build locais
+**/dist
+**/.next
+**/.turbo
+
+# Arquivos de desenvolvimento
+.git
+.gitignore
+**/*.md
+**/*.log
+**/.env
+**/.env.*
+!**/.env.example
+
+# Apps que não são a API
+apps/web
+apps/mobile
+
+# Supabase local
+supabase/.branches
+supabase/.temp
+supabase/data
+
+# Docker
+Dockerfile
+.dockerignore
+
+# Misc
+.vscode
+.idea
+*.test.ts
+*.spec.ts
+coverage

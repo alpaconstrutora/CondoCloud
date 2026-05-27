@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bull';
 import type { Queue } from 'bull';
 import { v4 as uuidv4 } from 'uuid';
@@ -34,16 +34,22 @@ const QUEUE_ROUTING: Record<DomainEventName, QueueName[]> = {
 @Injectable()
 export class EventEmitterService {
   private readonly logger = new Logger(EventEmitterService.name);
+  private readonly redisEnabled: boolean;
 
   constructor(
     private readonly supabaseService: SupabaseService,
-    @InjectQueue(QUEUE_NAMES.ACTIVATION_SEQUENCES) private readonly activationQueue: Queue,
-    @InjectQueue(QUEUE_NAMES.NOTIFICATIONS) private readonly notificationsQueue: Queue,
-    @InjectQueue(QUEUE_NAMES.PROPOSALS) private readonly proposalsQueue: Queue,
-    @InjectQueue(QUEUE_NAMES.REFERRALS) private readonly referralsQueue: Queue,
-    @InjectQueue(QUEUE_NAMES.METRICS) private readonly metricsQueue: Queue,
-    @InjectQueue(QUEUE_NAMES.AUDIT) private readonly auditQueue: Queue,
-  ) {}
+    @Optional() @InjectQueue(QUEUE_NAMES.ACTIVATION_SEQUENCES) private readonly activationQueue: Queue | null,
+    @Optional() @InjectQueue(QUEUE_NAMES.NOTIFICATIONS)        private readonly notificationsQueue: Queue | null,
+    @Optional() @InjectQueue(QUEUE_NAMES.PROPOSALS)            private readonly proposalsQueue: Queue | null,
+    @Optional() @InjectQueue(QUEUE_NAMES.REFERRALS)            private readonly referralsQueue: Queue | null,
+    @Optional() @InjectQueue(QUEUE_NAMES.METRICS)              private readonly metricsQueue: Queue | null,
+    @Optional() @InjectQueue(QUEUE_NAMES.AUDIT)                private readonly auditQueue: Queue | null,
+  ) {
+    this.redisEnabled = !!metricsQueue;
+    if (!this.redisEnabled) {
+      this.logger.warn('Redis não configurado — eventos persistidos no Supabase, filas desativadas');
+    }
+  }
 
   async emit<T extends keyof DomainEventPayloads>(input: EventInput<T>): Promise<DomainEvent<T>> {
     const event: DomainEvent<T> = {
@@ -78,7 +84,12 @@ export class EventEmitterService {
   }
 
   private async route(event: DomainEvent): Promise<void> {
-    const queueMap: Record<QueueName, Queue> = {
+    if (!this.redisEnabled) {
+      this.logger.debug(`Evento ${event.event_name} salvo no Supabase (filas desativadas)`);
+      return;
+    }
+
+    const queueMap: Record<QueueName, Queue | null> = {
       [QUEUE_NAMES.ACTIVATION_SEQUENCES]: this.activationQueue,
       [QUEUE_NAMES.NOTIFICATIONS]:        this.notificationsQueue,
       [QUEUE_NAMES.PROPOSALS]:            this.proposalsQueue,
@@ -88,11 +99,14 @@ export class EventEmitterService {
     };
 
     // Todos os eventos vão para métricas
-    await this.metricsQueue.add('domain_event', event);
+    await this.metricsQueue!.add('domain_event', event);
 
     const targets = QUEUE_ROUTING[event.event_name as DomainEventName] ?? [];
     await Promise.all(
-      targets.map((queueName) => queueMap[queueName].add('domain_event', event)),
+      targets
+        .map((queueName) => queueMap[queueName])
+        .filter((q): q is Queue => q !== null)
+        .map((q) => q.add('domain_event', event)),
     );
   }
 }

@@ -1,0 +1,71 @@
+name: condocloud
+
+services:
+  - name: api
+    type: web
+    instance_type: nano        # free tier do Koyeb (0.1 vCPU, 512 MB)
+    regions:
+      - was                    # Washington DC — menor latência para SA
+    ports:
+      - port: 3000
+        protocol: http
+    routes:
+      - path: /
+        port: 3000
+    deployment:
+      docker:
+        dockerfile: Dockerfile
+        context: .
+    health_checks:
+      - type: http
+        port: 3000
+        path: /api/v1
+        initial_delay_seconds: 45
+        period_seconds: 30
+        timeout_seconds: 5
+        failure_threshold: 3
+    scaling:
+      min: 1
+      max: 1
+    env:
+      # ── App ──────────────────────────────────────────────────
+      - name: NODE_ENV
+        value: production
+      - name: PORT
+        value: "3000"
+      # ── Supabase ─────────────────────────────────────────────
+      - name: SUPABASE_URL
+        secret: SUPABASE_URL
+      - name: SUPABASE_SERVICE_ROLE_KEY
+        secret: SUPABASE_SERVICE_ROLE_KEY
+      - name: SUPABASE_ANON_KEY
+        secret: SUPABASE_ANON_KEY
+      # ── Redis (Upstash) ───────────────────────────────────────
+      - name: REDIS_URL
+        secret: REDIS_URL
+      # ── Auth ─────────────────────────────────────────────────
+      - name: JWT_SECRET
+        secret: JWT_SECRET
+      # ── Email (Resend) ────────────────────────────────────────
+      - name: RESEND_API_KEY
+        secret: RESEND_API_KEY
+      - name: RESEND_FROM
+        value: noreply@condocloud.com.br
+      # ── WhatsApp ─────────────────────────────────────────────
+      - name: WHATSAPP_API_URL
+        secret: WHATSAPP_API_URL
+      - name: WHATSAPP_API_TOKEN
+        secret: WHATSAPP_API_TOKEN
+      # ── Stripe ───────────────────────────────────────────────
+      - name: STRIPE_SECRET_KEY
+        secret: STRIPE_SECRET_KEY
+      - name: STRIPE_WEBHOOK_SECRET
+        secret: STRIPE_WEBHOOK_SECRET
+      # ── Throttle ─────────────────────────────────────────────
+      - name: THROTTLE_TTL
+        value: "60000"
+      - name: THROTTLE_LIMIT
+        value: "200"
+      # ── Frontend URL (para redirects do Stripe/billing) ───────
+      - name: WEB_URL
+        value: https://condocloud.com.br
